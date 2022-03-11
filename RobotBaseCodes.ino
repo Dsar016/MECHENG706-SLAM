@@ -23,6 +23,7 @@
 
 //#define NO_READ_GYRO  //Uncomment of GYRO is not attached.
 //#define NO_HC-SR04 //Uncomment of HC-SR04 ultrasonic ranging sensor is not attached.
+//#define NO_READ_IR //Uncomment if IR Sensors not attached
 //#define NO_BATTERY_V_OK //Uncomment of BATTERY_V_OK if you do not care about battery damage.
 
 //State machine states
@@ -44,6 +45,23 @@ const byte right_front = 51;
 //Default ultrasonic ranging sensor pins, these pins are defined my the Shield
 const int TRIG_PIN = 48;
 const int ECHO_PIN = 49;
+
+//IR Range Sensor Pins
+const int MID_RANGE_RIGHT_PIN = A4;  
+const int MID_RANGE_LEFT_PIN = A5;
+const int LONG_RANGE_RIGHT_PIN = A6; 
+const int LONG_RANGE_LEFT_PIN = A4;
+
+//List of IR range sensors on the robot
+enum IR_SENSOR {
+  LEFT_MID, 
+  LEFT_LONG, 
+  RIGHT_MID,
+  RIGHT_LONG
+};
+
+//Gyro Analog Pin
+const int GYRO_PIN = A3;
 
 // Anything over 400 cm (23200 us pulse) is "out of range". Hit:If you decrease to this the ranging sensor but the timeout is short, you may not need to read up to 4meters.
 const unsigned int MAX_DIST = 23200;
@@ -122,7 +140,7 @@ STATE running() {
 
     SerialCom->println("RUNNING---------");
     speed_change_smooth();
-    Analog_Range_A4();
+    //Analog_Range_A4();
 
 #ifndef NO_READ_GYRO
     GYRO_reading();
@@ -327,17 +345,29 @@ void HC_SR04_range()
 }
 #endif
 
-void Analog_Range_A4()
+#ifndef NO_READ_IR
+void IR_reading(IR_SENSOR sensor)
 {
-  SerialCom->print("Analog Range A4:");
-  SerialCom->println(analogRead(A4));
+  SerialCom->print("IR Sensor:");
+  switch (sensor)
+  {
+    case LEFT_MID: 
+      SerialCom->println(analogRead(A4));
+    case LEFT_LONG:
+      SerialCom->println(analogRead(A4));
+    case RIGHT_LONG:
+      SerialCom->println(analogRead(A4));
+    case RIGHT_MID:
+      SerialCom->println(analogRead(A4));
+  }
 }
+#endif
 
 #ifndef NO_READ_GYRO
 void GYRO_reading()
 {
   SerialCom->print("GYRO A3:");
-  SerialCom->println(analogRead(A3));
+  SerialCom->println(analogRead(GYRO_PIN));
 }
 #endif
 
