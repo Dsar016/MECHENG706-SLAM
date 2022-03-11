@@ -358,16 +358,16 @@ void IR_reading(IR_SENSOR sensor)
   switch (sensor)
   {
     case LEFT_MID: 
-      SerialCom->println(MID_RANGE_LEFT_PIN);
+      SerialCom->println("Mid Left IR Sensor");
       SerialCom->println(MID_RANGE_LEFT_PIN);
     case LEFT_LONG:
-      SerialCom->println(MID_RANGE_LEFT_PIN);
+      SerialCom->println("Long Left IR Sensor");
       SerialCom->println(LONG_RANGE_LEFT_PIN);
     case RIGHT_LONG:
-      SerialCom->println(MID_RANGE_LEFT_PIN);
+      SerialCom->println("Long Right IR Sensor");
       SerialCom->println(LONG_RANGE_RIGHT_PIN);
     case RIGHT_MID:
-      SerialCom->println(MID_RANGE_LEFT_PIN);
+      SerialCom->println("Mid Right IR Sensor");
       SerialCom->println(MID_RANGE_RIGHT_PIN);
   }
 }
