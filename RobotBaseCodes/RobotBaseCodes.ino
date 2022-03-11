@@ -47,10 +47,10 @@ const int TRIG_PIN = 48;
 const int ECHO_PIN = 49;
 
 //IR Range Sensor Pins
-const int MID_RANGE_RIGHT_PIN = A4;  
-const int MID_RANGE_LEFT_PIN = A5;
-const int LONG_RANGE_RIGHT_PIN = A6; 
-const int LONG_RANGE_LEFT_PIN = A4;
+const int MID_RANGE_RIGHT_PIN = A14;  
+const int MID_RANGE_LEFT_PIN = A12;
+const int LONG_RANGE_RIGHT_PIN = A15; 
+const int LONG_RANGE_LEFT_PIN = A13;
 
 //List of IR range sensors on the robot
 enum IR_SENSOR {
@@ -358,13 +358,13 @@ void IR_reading(IR_SENSOR sensor)
   switch (sensor)
   {
     case LEFT_MID: 
-      SerialCom->println(analogRead(A4));
+      SerialCom->println(MID_RANGE_LEFT_PIN);
     case LEFT_LONG:
-      SerialCom->println(analogRead(A4));
+      SerialCom->println(LONG_RANGE_LEFT_PIN);
     case RIGHT_LONG:
-      SerialCom->println(analogRead(A4));
+      SerialCom->println(LONG_RANGE_RIGHT_PIN);
     case RIGHT_MID:
-      SerialCom->println(analogRead(A4));
+      SerialCom->println(MID_RANGE_RIGHT_PIN);
   }
 }
 #endif
