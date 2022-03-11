@@ -140,10 +140,16 @@ STATE running() {
 
     SerialCom->println("RUNNING---------");
     speed_change_smooth();
-    //Analog_Range_A4();
 
 #ifndef NO_READ_GYRO
     GYRO_reading();
+#endif
+
+#ifndef NO_READ_IR
+    IR_reading(LEFT_MID);
+    IR_reading(LEFT_LONG);
+    IR_reading(RIGHT_MID);
+    IR_reading(RIGHT_LONG);
 #endif
 
 #ifndef NO_HC-SR04
