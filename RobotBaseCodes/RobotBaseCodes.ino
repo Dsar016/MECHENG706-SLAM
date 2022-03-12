@@ -358,17 +358,21 @@ void IR_reading(IR_SENSOR sensor)
   switch (sensor)
   {
     case LEFT_MID: 
-      SerialCom->println("Mid Left IR Sensor");
-      SerialCom->println(MID_RANGE_LEFT_PIN);
+      SerialCom->print("Mid Left IR Sensor");
+      SerialCom->print((pow(2112.5, 1/0.972)) / (pow(analogRead(MID_RANGE_LEFT_PIN),1/0.972))); //MID_RANGE_LEFT_PIN
+      SerialCom->println(" Cm");
     case LEFT_LONG:
-      SerialCom->println("Long Left IR Sensor");
-      SerialCom->println(LONG_RANGE_LEFT_PIN);
+      SerialCom->print("Long Left IR Sensor");
+      SerialCom->print((pow(3380, 1/0.84)) / (pow(analogRead(LONG_RANGE_LEFT_PIN),1/0.84))); //LONG_RANGE_LEFT_PIN
+      SerialCom->println(" Cm");
     case RIGHT_LONG:
-      SerialCom->println("Long Right IR Sensor");
-      SerialCom->println(LONG_RANGE_RIGHT_PIN);
+      SerialCom->print("Long Right IR Sensor");
+      SerialCom->print((pow(3993.7, 1/0.929)) / (pow(analogRead(LONG_RANGE_RIGHT_PIN),1/0.929))); //LONG_RANGE_RIGHT_PIN
+      SerialCom->println(" Cm");
     case RIGHT_MID:
-      SerialCom->println("Mid Right IR Sensor");
-      SerialCom->println(MID_RANGE_RIGHT_PIN);
+      SerialCom->print("Mid Right IR Sensor");
+      SerialCom->print((pow(2463, 1/1.032)) / (pow(analogRead(MID_RANGE_RIGHT_PIN),1/1.032))); //MID_RANGE_RIGHT_PIN
+      SerialCom->println(" Cm");
   }
 }
 #endif
