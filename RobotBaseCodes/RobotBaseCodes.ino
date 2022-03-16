@@ -60,6 +60,16 @@ enum IR_SENSOR {
   RIGHT_LONG
 };
 
+//Define constants for IR sensor Calculations, excel sheet with calibrations are available on our google drive
+const int Mid_Left_Exponent = 1 / 1.001;
+const int Mid_Left_Power = pow(2362.6, Mid_Left_Exponent);
+const int Long_Left_Exponent = 1 / 0.901;
+const int Long_Left_Power = pow(3720.4, Long_Left_Exponent);
+const int Mid_Right_Exponent = 1 / 0.695;
+const int Mid_Right_Power = pow(2148.8, Mid_Right_Exponent);
+
+//Long Right Sensor uses a logarithmic equation instead of a power equation, so the constants are defined differently, they need to be calculated every loop, as the changing reading is right in the middle of the equation
+
 //Gyro Analog Pin
 const int GYRO_PIN = A3;
 
@@ -358,17 +368,26 @@ void IR_reading(IR_SENSOR sensor)
   switch (sensor)
   {
     case LEFT_MID: 
-      SerialCom->println("Mid Left IR Sensor");
-      SerialCom->println(MID_RANGE_LEFT_PIN);
+      SerialCom->print("Mid Left IR Sensor: ");
+      SerialCom->print((Mid_Left_Power) / (pow(analogRead(MID_RANGE_LEFT_PIN),Mid_Left_Exponent))); //MID_RANGE_LEFT_PIN
+      SerialCom->println(" Cm");
+      break;
     case LEFT_LONG:
-      SerialCom->println("Long Left IR Sensor");
-      SerialCom->println(LONG_RANGE_LEFT_PIN);
+      SerialCom->print("Long Left IR Sensor: ");
+      SerialCom->print(Long_Left_Power) / (pow(analogRead(LONG_RANGE_LEFT_PIN),Long_Left_Exponent)); //LONG_RANGE_LEFT_PIN
+      SerialCom->println(" Cm");
+      break;
     case RIGHT_LONG:
-      SerialCom->println("Long Right IR Sensor");
-      SerialCom->println(LONG_RANGE_RIGHT_PIN);
-    case RIGHT_MID:
-      SerialCom->println("Mid Right IR Sensor");
-      SerialCom->println(MID_RANGE_RIGHT_PIN);
+      SerialCom->print("Long Right IR Sensor: ");
+      //Must be calculated in the switch statement, as the analog read is right in the middle of the equation, so its always changing
+      SerialCom->print(-(log(analogRead(LONG_RANGE_RIGHT_PIN) / 379.76)/0.056)); //LONG_RANGE_RIGHT_PIN
+      SerialCom->println(" Cm");
+      break;
+     case RIGHT_MID:
+      SerialCom->print("Mid Right IR Sensor: ");
+      SerialCom->print((Mid_Right_Power) / (pow(analogRead(MID_RANGE_RIGHT_PIN),Mid_Right_Exponent))); //MID_RANGE_RIGHT_PIN
+      SerialCom->println(" Cm");
+      break;
   }
 }
 #endif
