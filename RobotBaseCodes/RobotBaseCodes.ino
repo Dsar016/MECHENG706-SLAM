@@ -137,6 +137,19 @@ void loop(void) //main loop
 
 ///////////////////// PROTOTYPE 1 FUNCTIONS ///////////////////////
 
+int speedX = 0, speedY = 0;
+
+/**
+ * updates the x and y speeds of the robot according to the global speed variables
+ */
+void DriveXY() {
+  left_font_motor.writeMicroseconds(1500 + speedX + speedY);
+  right_font_motor.writeMicroseconds(1500 + speedX - speedY);
+  left_rear_motor.writeMicroseconds(1500 + speedX - speedY);
+  right_rear_motor.writeMicroseconds(1500 + speedX + speedY);
+}
+
+
 void LocateCorner(void) {
   
 }
