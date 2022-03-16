@@ -33,6 +33,16 @@ enum STATE {
   STOPPED
 };
 
+//Robot direction
+enum DIRECTION {
+  LEFT,
+  RIGHT,
+  FORWARDS,
+  BACKWARDS,
+  CCW,
+  CW
+};
+
 //Refer to Shield Pinouts.jpg for pin locations
 
 //Default motor control pins
@@ -70,7 +80,6 @@ Servo left_font_motor;  // create servo object to control Vex Motor Controller 2
 Servo left_rear_motor;  // create servo object to control Vex Motor Controller 29
 Servo right_rear_motor;  // create servo object to control Vex Motor Controller 29
 Servo right_font_motor;  // create servo object to control Vex Motor Controller 29
-Servo turret_motor;
 
 
 int speed_val = 100;
@@ -82,7 +91,6 @@ HardwareSerial *SerialCom;
 int pos = 0;
 void setup(void)
 {
-  turret_motor.attach(11);
   pinMode(LED_BUILTIN, OUTPUT);
 
   // The Trigger pin will tell the sensor to range find
@@ -117,6 +125,40 @@ void loop(void) //main loop
   };
 }
 
+///////////////////// PROTOTYPE 1 FUNCTIONS ///////////////////////
+
+void LocateCorner(void) {
+  
+}
+
+void MoveToCorner(void) {
+  
+}
+
+void AlignEdge(void) {
+  
+}
+
+void FollowEdge(int distance, DIRECTION direct) {
+  
+}
+
+void Shift(DIRECTION direct) {
+  
+}
+
+void Rotate180(void) {
+  
+}
+
+double FindCloseEdge(void) {
+  
+}
+
+////////////////// SENSOR FUNCTIONS /////////////////////////////////
+
+
+///////////////////////////////////////////////////////////////////
 
 STATE initialising() {
   //initialising
@@ -132,49 +174,66 @@ STATE running() {
 
   static unsigned long previous_millis;
 
-  read_serial_command();
-  fast_flash_double_LED_builtin();
-
   if (millis() - previous_millis > 500) {  //Arduino style 500ms timed execution statement
     previous_millis = millis();
 
     SerialCom->println("RUNNING---------");
     speed_change_smooth();
 
-#ifndef NO_READ_GYRO
-    GYRO_reading();
-#endif
+  #ifndef NO_READ_GYRO
+      GYRO_reading();
+  #endif
+  
+  #ifndef NO_READ_IR
+      IR_reading(LEFT_MID);
+      IR_reading(LEFT_LONG);
+      IR_reading(RIGHT_MID);
+      IR_reading(RIGHT_LONG);
+  #endif
+  
+  #ifndef NO_HC-SR04
+      HC_SR04_range();
+  #endif
+  
+  #ifndef NO_BATTERY_V_OK
+      if (!is_battery_voltage_OK()) return STOPPED;
+  #endif
+  }
 
-#ifndef NO_READ_IR
-    IR_reading(LEFT_MID);
-    IR_reading(LEFT_LONG);
-    IR_reading(RIGHT_MID);
-    IR_reading(RIGHT_LONG);
-#endif
-
-#ifndef NO_HC-SR04
-    HC_SR04_range();
-#endif
-
-#ifndef NO_BATTERY_V_OK
-    if (!is_battery_voltage_OK()) return STOPPED;
-#endif
-
-
-    turret_motor.write(pos);
-
-    if (pos == 0)
-    {
-      pos = 45;
+  // PROTOTYPE 1 //////////////////////
+  double dist;
+  
+  LocateCorner();
+  MoveToCorner();
+  AlignEdge();
+  FollowEdge(15, LEFT);
+  DIRECTION direct = RIGHT;
+  DIRECTION follow_edge;
+  
+  while(0) { // distance read in direct direction < 15
+    Shift(direct);
+    Rotate180();
+    dist = FindCloseEdge();
+    if(dist > 0) {
+      follow_edge = LEFT;
+    } else {
+      follow_edge = RIGHT;
     }
-    else
-    {
-      pos = 0;
+    FollowEdge(abs(dist), follow_edge);
+    
+    if(direct = LEFT) {
+      direct = RIGHT;
+    } else {
+      direct = LEFT;
     }
   }
 
+  FollowEdge(15, direct);
+  // END OF PROTOTYPE 1 ///////////////
+
   return RUNNING;
 }
+
 
 //Stop of Lipo Battery voltage is too low, to protect Battery
 STATE stopped() {
