@@ -118,7 +118,7 @@ void setup(void)
   digitalWrite(TRIG_PIN, LOW);
 
   cli();
-  OCR2A = 16000;
+  OCR2A = 16000l;
   TCCR2A |= (1 << WGM11); // CTC mode
   TCCR2B |= (1 << CS10); // no prescaler
   TIMSK2 |= (1 << OCIE1A);
@@ -168,7 +168,7 @@ void DriveXYZ() {
   right_rear_motor.writeMicroseconds(1500 + speedX + speedY + (L1+L2)*rSpeedZ);
 }
 
-void RotateDeg(int degrees = 0){
+void RotateDeg(float degrees = 0){
   float theta = 0;
   rSpeedZ = 10;
  
@@ -187,6 +187,12 @@ ISR(TIMER2_COMPA_vect) {
 
 void LocateCorner(void) {
   
+  const short n = 72;
+
+  for(int a = 0; a < 360; a += 360/n){
+    RotateDeg(a);
+    HC_SR04_range();
+  }
 }
 
 void MoveToCorner(void) {
