@@ -32,7 +32,7 @@ SoftwareSerial BluetoothSerial(BLUETOOTH_RX, BLUETOOTH_TX);
 ///////////////////////////////////////////////////////////////////////////
 
 //#define NO_READ_GYRO  //Uncomment of GYRO is not attached.
-//#define NO_HC-SR04 //Uncomment of HC-SR04 ultrasonic ranging sensor is not attached.
+//#define NO_HCSR04 //Uncomment of HC-SR04 ultrasonic ranging sensor is not attached.
 //#define NO_READ_IR //Uncomment if IR Sensors not attached
 //#define NO_BATTERY_V_OK //Uncomment of BATTERY_V_OK if you do not care about battery damage.
 
@@ -117,6 +117,13 @@ void setup(void)
   pinMode(TRIG_PIN, OUTPUT);
   digitalWrite(TRIG_PIN, LOW);
 
+  cli();
+  OCR2A = 16000;
+  TCCR2A |= (1 << WGM11); // CTC mode
+  TCCR2B |= (1 << CS10); // no prescaler
+  TIMSK2 |= (1 << OCIE1A);
+  sei();
+
   // Setup the Serial port and pointer, the pointer allows switching the debug info through the USB port(Serial) or Bluetooth port(Serial1) with ease.
   SerialCom = &Serial;
   SerialCom->begin(115200);
@@ -146,19 +153,37 @@ void loop(void) //main loop
 
 ///////////////////// PROTOTYPE 1 FUNCTIONS ///////////////////////
 
-int speedX = 0, speedY = 0, rSpeedZ = 0;
+int speedX = 0, speedY = 0, rSpeedZ = 0; // m/s and rad/s
 const float L1 = 0.10, L2 = 0.08; //dimensions in m
+
+int msCount2 = 0; //millisecond count on timer 2
 
 /**
  * updates the x and y speeds of the robot according to the global speed variables
  */
 void DriveXYZ() {
-  left_font_motor.writeMicroseconds(1500 + speedX + speedY - (L1+L2)*rSpeedZ);
-  right_font_motor.writeMicroseconds(1500 + speedX - speedY + (L1+L2)*rSpeedZ);
+  left_front_motor.writeMicroseconds(1500 + speedX + speedY - (L1+L2)*rSpeedZ);
+  right_front_motor.writeMicroseconds(1500 + speedX - speedY + (L1+L2)*rSpeedZ);
   left_rear_motor.writeMicroseconds(1500 + speedX - speedY  - (L1+L2)*rSpeedZ);
   right_rear_motor.writeMicroseconds(1500 + speedX + speedY + (L1+L2)*rSpeedZ);
 }
 
+void RotateDeg(int degrees = 0){
+  float theta = 0;
+  rSpeedZ = 10;
+ 
+  while(theta < degrees){
+    DriveXYZ();
+    theta = rSpeedZ * (PI/180) * (1000*msCount2);
+  }
+
+  rSpeedZ = 0;
+}
+
+ISR(TIMER2_COMPA_vect) {
+  TCNT2 = 0;
+  msCount2++;
+}
 
 void LocateCorner(void) {
   
@@ -224,7 +249,7 @@ STATE running() {
       IR_reading(RIGHT_LONG);
   #endif
   
-  #ifndef NO_HC-SR04
+  #ifndef NO_HCSR04
       HC_SR04_range();
   #endif
   
@@ -384,7 +409,7 @@ boolean is_battery_voltage_OK()
 }
 #endif
 
-#ifndef NO_HC-SR04
+#ifndef NO_HCSR04
 void HC_SR04_range()
 {
   unsigned long t1;
