@@ -137,16 +137,17 @@ void loop(void) //main loop
 
 ///////////////////// PROTOTYPE 1 FUNCTIONS ///////////////////////
 
-int speedX = 0, speedY = 0;
+int speedX = 0, speedY = 0, rSpeedZ = 0;
+const float L1 = 0.10, L2 = 0.08; //dimensions in m
 
 /**
  * updates the x and y speeds of the robot according to the global speed variables
  */
-void DriveXY() {
-  left_font_motor.writeMicroseconds(1500 + speedX + speedY);
-  right_font_motor.writeMicroseconds(1500 + speedX - speedY);
-  left_rear_motor.writeMicroseconds(1500 + speedX - speedY);
-  right_rear_motor.writeMicroseconds(1500 + speedX + speedY);
+void DriveXYZ() {
+  left_font_motor.writeMicroseconds(1500 + speedX + speedY - (L1+L2)*rSpeedZ);
+  right_font_motor.writeMicroseconds(1500 + speedX - speedY + (L1+L2)*rSpeedZ);
+  left_rear_motor.writeMicroseconds(1500 + speedX - speedY  - (L1+L2)*rSpeedZ);
+  right_rear_motor.writeMicroseconds(1500 + speedX + speedY + (L1+L2)*rSpeedZ);
 }
 
 
