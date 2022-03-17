@@ -21,6 +21,16 @@
 */
 #include <Servo.h>  //Need for Servo pulse output
 
+// Wireless Serial ////////////////////////////////////////////////////////
+// To print to wireless module use BluetoothSerial.print(...);
+#include <SoftwareSerial.h>
+// Serial Data input pin
+#define BLUETOOTH_RX 10
+// Serial Data output pin
+#define BLUETOOTH_TX 11
+SoftwareSerial BluetoothSerial(BLUETOOTH_RX, BLUETOOTH_TX);
+///////////////////////////////////////////////////////////////////////////
+
 //#define NO_READ_GYRO  //Uncomment of GYRO is not attached.
 //#define NO_HC-SR04 //Uncomment of HC-SR04 ultrasonic ranging sensor is not attached.
 //#define NO_READ_IR //Uncomment if IR Sensors not attached
@@ -110,12 +120,11 @@ void setup(void)
   // Setup the Serial port and pointer, the pointer allows switching the debug info through the USB port(Serial) or Bluetooth port(Serial1) with ease.
   SerialCom = &Serial;
   SerialCom->begin(115200);
+  BluetoothSerial.begin(115200);
   SerialCom->println("MECHENG706_Base_Code_25/01/2018");
   delay(1000);
   SerialCom->println("Setup....");
-
   delay(1000); //settling time but no really needed
-
 }
 
 void loop(void) //main loop
