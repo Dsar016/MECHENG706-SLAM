@@ -188,11 +188,13 @@ ISR(TIMER2_COMPA_vect) {
 void LocateCorner(void) {
   
   const short n = 72;
+  float distance[n];
 
-  for(int a = 0; a < 360; a += 360/n){
-    RotateDeg(a);
-    HC_SR04_range();
+  for(int i = 0; i < 72; i++){ //populate measurement array
+    RotateDeg(i*(360/n));
+    distance[i] = HC_SR04_range();
   }
+
 }
 
 void MoveToCorner(void) {
@@ -416,7 +418,7 @@ boolean is_battery_voltage_OK()
 #endif
 
 #ifndef NO_HCSR04
-void HC_SR04_range()
+float HC_SR04_range()
 {
   unsigned long t1;
   unsigned long t2;
@@ -471,6 +473,8 @@ void HC_SR04_range()
     SerialCom->print(cm);
     SerialCom->println("cm");
   }
+
+  return cm;
 }
 #endif
 
