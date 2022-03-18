@@ -88,6 +88,13 @@ const int Long_Left_Power = pow(3720.4, Long_Left_Exponent);
 const int Mid_Right_Exponent = 1 / 0.695;
 const int Mid_Right_Power = pow(2148.8, Mid_Right_Exponent);
 
+int Mid_Left_Value, Mid_Right_Value, Long_Left_Value, Long_Right_Value;
+double last_est = 0;
+double last_var = 999;
+double process_noise = 1; //High if the process itself has lots of noise
+double sensor_noise = 1; //High if the sensor has lots of noise
+//Note: these noises are relative to each other, so if the process is stable, the sensor noise value will be larger due to this
+
 //Long Right Sensor uses a logarithmic equation instead of a power equation, so the constants are defined differently, they need to be calculated every loop, as the changing reading is right in the middle of the equation
 
 //Gyro Analog Pin
@@ -175,7 +182,18 @@ double FindCloseEdge(void) {
 }
 
 ////////////////// SENSOR FUNCTIONS /////////////////////////////////
+double KalmanFilter(double rawdata, double prev_est){
+  double a_priori_est, a_post_est, a_priori_var, a_post_var, kalman_gain;
 
+  a_priori_est = prev_est;  
+  a_priori_var = last_var + process_noise; 
+
+  kalman_gain = a_priori_var/(a_priori_var+sensor_noise);
+  a_post_est = a_priori_est + kalman_gain*(rawdata-a_priori_est);
+  a_post_var = (1- kalman_gain)*a_priori_var;
+  last_var = a_post_var;
+  return a_post_est;
+}
 
 ///////////////////////////////////////////////////////////////////
 
@@ -437,6 +455,7 @@ void IR_reading(IR_SENSOR sensor)
   {
     case LEFT_MID: 
       SerialCom->print("Mid Left IR Sensor: ");
+      
       SerialCom->print((Mid_Left_Power) / (pow(analogRead(MID_RANGE_LEFT_PIN),Mid_Left_Exponent))); //MID_RANGE_LEFT_PIN
       SerialCom->println(" Cm");
       break;
