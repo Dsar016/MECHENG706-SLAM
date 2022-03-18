@@ -235,12 +235,9 @@ STATE running() {
 
   if (millis() - previous_millis > 500) {  //Arduino style 500ms timed execution statement
     previous_millis = millis();
-    speedY = 0;
-    speedX = -100;
-    DriveXYZ();
-    //SerialCom->println((L1+L2)*rSpeedZ);
+
     SerialCom->println("RUNNING---------");
-    speed_change_smooth();}/*
+    speed_change_smooth();
 
   #ifndef NO_READ_GYRO
       GYRO_reading();
@@ -290,7 +287,7 @@ STATE running() {
     }
   }
 
-  FollowEdge(15, direct);*/
+  FollowEdge(15, direct);
   // END OF PROTOTYPE 1 ///////////////
 
   return RUNNING;
