@@ -154,7 +154,7 @@ void loop(void) //main loop
 ///////////////////// PROTOTYPE 1 FUNCTIONS ///////////////////////
 
 int speedX = 0, speedY = 0, rSpeedZ = 0; // m/s and rad/s
-const float L1 = 0.10, L2 = 0.08; //dimensions in m
+const float L1 = 0.09, L2 = 0.09; //dimensions in m
 
 int msCount2 = 0; //millisecond count on timer 2
 
@@ -230,7 +230,9 @@ STATE initialising() {
 
 STATE running() {
 
-  static unsigned long previous_millis;
+  speedX = 10;
+  DriveXYZ();
+  /*static unsigned long previous_millis;
 
   if (millis() - previous_millis > 500) {  //Arduino style 500ms timed execution statement
     previous_millis = millis();
@@ -286,7 +288,7 @@ STATE running() {
     }
   }
 
-  FollowEdge(15, direct);
+  FollowEdge(15, direct);*/
   // END OF PROTOTYPE 1 ///////////////
 
   return RUNNING;
