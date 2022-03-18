@@ -163,14 +163,22 @@ void FollowEdge(int distance, DIRECTION direct) {
 }
 
 void Shift(DIRECTION direct) {
-  
+  // Start motor in correct directions
+  if(direct == LEFT) {
+    strafe_left();
+  } else if(direct == RIGHT) {
+    strafe_right();
+  }
+
+  delay(2500);
+  stop();
 }
 
 // Rotates the robot by rougly 180 degrees
 void Rotate180(void) {
   cw(); // Send motors clockwise
   delay(5000);
-  disable_motors();
+  stop();
 }
 
 double FindCloseEdge(void) {
@@ -223,6 +231,7 @@ STATE running() {
   }
 
   // PROTOTYPE 1 //////////////////////
+  /*
   double dist;
   
   LocateCorner();
@@ -251,6 +260,13 @@ STATE running() {
   }
 
   FollowEdge(15, direct);
+  */
+  Shift(LEFT);
+  SerialCom->println("LEFT");
+  delay(2000);
+  Shift(RIGHT);
+  SerialCom->println("RIGHT");
+  delay(2000);
   // END OF PROTOTYPE 1 ///////////////
 
   return RUNNING;
