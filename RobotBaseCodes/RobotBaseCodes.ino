@@ -166,8 +166,11 @@ void Shift(DIRECTION direct) {
   
 }
 
+// Rotates the robot by rougly 180 degrees
 void Rotate180(void) {
-  
+  cw(); // Send motors clockwise
+  delay(5000);
+  disable_motors();
 }
 
 double FindCloseEdge(void) {
@@ -228,7 +231,7 @@ STATE running() {
   FollowEdge(15, LEFT);
   DIRECTION direct = RIGHT;
   DIRECTION follow_edge;
-  
+
   while(0) { // distance read in direct direction < 15
     Shift(direct);
     Rotate180();
