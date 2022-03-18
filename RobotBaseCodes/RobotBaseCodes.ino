@@ -118,9 +118,9 @@ void setup(void)
   digitalWrite(TRIG_PIN, LOW);
 
   cli();
-  OCR2A = 16000;
+  OCR2A = 250;
   TCCR2A |= (1 << WGM11); // CTC mode
-  TCCR2B |= (1 << CS10); // no prescaler
+  TCCR2B |= (1 << CS01) | (1<<CS00); // no prescaler
   TIMSK2 |= (1 << OCIE1A);
   sei();
 
