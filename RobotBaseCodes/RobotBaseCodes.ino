@@ -163,9 +163,9 @@ int msCount2 = 0; //millisecond count on timer 2
  */
 void DriveXYZ() {
   left_front_motor.writeMicroseconds(1500 + speedX + speedY - (L1+L2)*rSpeedZ);
-  right_front_motor.writeMicroseconds(1500 + speedX - speedY + (L1+L2)*rSpeedZ);
-  left_rear_motor.writeMicroseconds(1500 + speedX - speedY  - (L1+L2)*rSpeedZ);
-  right_rear_motor.writeMicroseconds(1500 + speedX + speedY + (L1+L2)*rSpeedZ);
+  left_rear_motor.writeMicroseconds(1500 + speedX - speedY + (L1+L2)*rSpeedZ);
+  right_rear_motor.writeMicroseconds(1500 - speedX - speedY  - (L1+L2)*rSpeedZ);
+  right_front_motor.writeMicroseconds(1500 - speedX + speedY + (L1+L2)*rSpeedZ);
 }
 
 void RotateDeg(int degrees = 0){
@@ -230,15 +230,17 @@ STATE initialising() {
 
 STATE running() {
 
-  speedX = 10;
-  DriveXYZ();
-  /*static unsigned long previous_millis;
+  
+  static unsigned long previous_millis;
 
   if (millis() - previous_millis > 500) {  //Arduino style 500ms timed execution statement
     previous_millis = millis();
-
+    speedY = 0;
+    speedX = -100;
+    DriveXYZ();
+    //SerialCom->println((L1+L2)*rSpeedZ);
     SerialCom->println("RUNNING---------");
-    speed_change_smooth();
+    speed_change_smooth();}/*
 
   #ifndef NO_READ_GYRO
       GYRO_reading();
