@@ -159,7 +159,16 @@ void AlignEdge(void) {
 }
 
 void FollowEdge(int distance, DIRECTION direct) {
-  
+  distance = 15;
+  //Robot starts moving forward, will add IR Sensor reading and direct later, depending on controller
+  forward();
+  //Robot will continue to drive forward until Ultra Sonic sensors detects 15 cm
+  if(HC_SR04_range <= distance){
+    stop();
+  }
+   else{
+    forward();
+   }
 }
 
 void Shift(DIRECTION direct) {
