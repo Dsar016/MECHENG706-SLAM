@@ -150,8 +150,19 @@ void LocateCorner(void) {
   
 }
 
-void MoveToCorner(void) {
-  
+void MoveToCorner(int distance) {
+  forward();
+  int count  = 0;
+  int keepDriving = 1;
+  // Stop driving when closer than distance cm
+  while (keepDriving){
+    if (HC_SR04_range <= distance) {
+      count = count + 1;
+      if (count > 5) {
+        keepDriving = 0;
+      }
+  }
+  stop();
 }
 
 void AlignEdge(void) {
@@ -270,12 +281,7 @@ STATE running() {
 
   FollowEdge(15, direct);
   */
-  Shift(LEFT);
-  SerialCom->println("LEFT");
-  delay(2000);
-  Shift(RIGHT);
-  SerialCom->println("RIGHT");
-  delay(2000);
+  MoveToCorner(20);
   // END OF PROTOTYPE 1 ///////////////
 
   return RUNNING;
