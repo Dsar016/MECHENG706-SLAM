@@ -161,6 +161,7 @@ void AlignEdge(void) {
 void FollowEdge(int distance, DIRECTION direct) {
   float Left_Mid_Reading;
   float Right_Mid_Reading;
+<<<<<<< Updated upstream
   float ultrasonic;
   Left_Mid_Reading = (Mid_Left_Power) / (pow(analogRead(MID_RANGE_LEFT_PIN),Mid_Left_Exponent));
   Right_Mid_Reading = (Mid_Right_Power) / (pow(analogRead(MID_RANGE_RIGHT_PIN),Mid_Right_Exponent));
@@ -169,6 +170,12 @@ void FollowEdge(int distance, DIRECTION direct) {
   forward();
   while(ultrasonic <= distance){
     ultrasonic = HC_SR04_range;
+=======
+  Left_Mid_Reading = (Mid_Left_Power) / (pow(analogRead(MID_RANGE_LEFT_PIN),Mid_Left_Exponent));
+  Right_Mid_Reading = (Mid_Right_Power) / (pow(analogRead(MID_RANGE_RIGHT_PIN),Mid_Right_Exponent));
+  //Robot starts moving forward, will add IR Sensor reading and direct later, depending on controller
+  while(forward){
+>>>>>>> Stashed changes
   if(Left_Mid_Reading < distance && direct == LEFT){
     stop();
     left_front_motor.writeMicroseconds(1500 - speed_val);
@@ -183,7 +190,10 @@ void FollowEdge(int distance, DIRECTION direct) {
     forward();
    }
   }
+<<<<<<< Updated upstream
   stop();
+=======
+>>>>>>> Stashed changes
 }
 
 void Shift(DIRECTION direct) {
