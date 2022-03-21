@@ -148,7 +148,7 @@ void loop(void) //main loop
     case STOPPED: //Stop of Lipo Battery voltage is too low, to protect Battery
       machine_state =  stopped();
       break;
-  };
+  }
 }
 
 ///////////////////// PROTOTYPE 1 FUNCTIONS ///////////////////////
@@ -205,30 +205,27 @@ void AlignEdge(void) {
   
 }
 
-void FollowEdge(int distance, DIRECTION direct) {
+void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct) {
   float Left_Mid_Reading;
   float Right_Mid_Reading;
-<<<<<<< Updated upstream
   float ultrasonic;
   Left_Mid_Reading = (Mid_Left_Power) / (pow(analogRead(MID_RANGE_LEFT_PIN),Mid_Left_Exponent));
   Right_Mid_Reading = (Mid_Right_Power) / (pow(analogRead(MID_RANGE_RIGHT_PIN),Mid_Right_Exponent));
-  ultrasonic = HC_SR04_range;
+  ultrasonic = HC_SR04_range();
   //Robot starts moving forward, will add IR Sensor reading
   forward();
-  while(ultrasonic <= distance){
-    ultrasonic = HC_SR04_range;
-=======
+  while(ultrasonic <= ForwardDistance){
+  ultrasonic = HC_SR04_range();
   Left_Mid_Reading = (Mid_Left_Power) / (pow(analogRead(MID_RANGE_LEFT_PIN),Mid_Left_Exponent));
   Right_Mid_Reading = (Mid_Right_Power) / (pow(analogRead(MID_RANGE_RIGHT_PIN),Mid_Right_Exponent));
   //Robot starts moving forward, will add IR Sensor reading and direct later, depending on controller
   while(forward){
->>>>>>> Stashed changes
-  if(Left_Mid_Reading < distance && direct == LEFT){
+  if(Left_Mid_Reading < SideDistance && direct == LEFT){
     stop();
     left_front_motor.writeMicroseconds(1500 - speed_val);
     right_front_motor.writeMicroseconds(1500 - speed_val);
   }
-  else if(Right_Mid_Reading > distance && direct == RIGHT){
+  else if(Right_Mid_Reading > SideDistance && direct == RIGHT){
     stop();
     left_front_motor.writeMicroseconds(1500 + speed_val);
     right_front_motor.writeMicroseconds(1500 + speed_val);
@@ -237,10 +234,8 @@ void FollowEdge(int distance, DIRECTION direct) {
     forward();
    }
   }
-<<<<<<< Updated upstream
   stop();
-=======
->>>>>>> Stashed changes
+ }
 }
 
 void Shift(DIRECTION direct) {
@@ -342,12 +337,8 @@ STATE running() {
 
   FollowEdge(15, direct);
   */
-  Shift(LEFT);
-  SerialCom->println("LEFT");
-  delay(2000);
-  Shift(RIGHT);
-  SerialCom->println("RIGHT");
-  delay(2000);
+  FollowEdge(15, 15, LEFT);
+  delay(20000);
   // END OF PROTOTYPE 1 ///////////////
 
   return RUNNING;
