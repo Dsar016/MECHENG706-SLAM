@@ -335,7 +335,7 @@ STATE running() {
   FollowEdge(15, direct);
   */
   MoveToCorner(20);
-  delay(10000);
+  return STOPPED;
   // END OF PROTOTYPE 1 ///////////////
 
   return RUNNING;
