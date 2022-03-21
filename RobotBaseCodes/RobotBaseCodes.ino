@@ -207,10 +207,10 @@ void MoveToCorner(float distance) {
     ultrasonic = HC_SR04_range();
     if (ultrasonic <= distance) {
       count = count + 1;
+      Serial.print("Count: ");
+      Serial.println(count);
       if (count > 5) {
         keepDriving = 0;
-        //Serial->print("Count: ");
-        //Serial->println(count);
       }
     }
   }
