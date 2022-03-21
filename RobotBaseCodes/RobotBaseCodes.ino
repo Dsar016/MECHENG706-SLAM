@@ -203,7 +203,7 @@ void MoveToCorner(float distance) {
   bool keepDriving = true;
   float ultrasonic;
   // Stop driving when closer than distance cm
-  while (keepDriving){
+  while (keepDriving) {
     ultrasonic = HC_SR04_range();
     SerialCom->print("Count: ");
     SerialCom->println(count);
@@ -335,6 +335,7 @@ STATE running() {
   FollowEdge(15, direct);
   */
   MoveToCorner(20);
+  delay(10000);
   // END OF PROTOTYPE 1 ///////////////
 
   return RUNNING;
