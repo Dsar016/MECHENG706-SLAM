@@ -200,19 +200,20 @@ void LocateCorner(void) {
 void MoveToCorner(float distance) {
   forward();
   int count  = 0;
-  int keepDriving = 1;
+  bool keepDriving = true;
   float ultrasonic;
   // Stop driving when closer than distance cm
   while (keepDriving){
     ultrasonic = HC_SR04_range();
+    SerialCom->print("Count: ");
+    SerialCom->println(count);
     if (ultrasonic <= distance) {
       count = count + 1;
-      Serial.print("Count: ");
-      Serial.println(count);
       if (count > 5) {
-        keepDriving = 0;
+        keepDriving = false;
+        SerialCom->println(keepDriving);
       }
-    }
+    } else { count = 0;}
   }
   stop();
 }
