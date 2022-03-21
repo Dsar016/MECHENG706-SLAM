@@ -200,20 +200,15 @@ void LocateCorner(void) {
 void MoveToCorner(float distance) {
   forward();
   int count  = 0;
-  bool keepDriving = true;
   float ultrasonic;
   // Stop driving when closer than distance cm
-  while (keepDriving) {
+  while (count <= 20) {
     ultrasonic = HC_SR04_range();
     SerialCom->print("Count: ");
     SerialCom->println(count);
     if (ultrasonic <= distance) {
       count = count + 1;
-      if (count > 5) {
-        keepDriving = false;
-        SerialCom->println(keepDriving);
-      }
-    } else { count = 0;}
+    }
   }
   stop();
 }
@@ -335,7 +330,7 @@ STATE running() {
   FollowEdge(15, direct);
   */
   MoveToCorner(20);
-  return STOPPED;
+  delay(10000);
   // END OF PROTOTYPE 1 ///////////////
 
   return RUNNING;
