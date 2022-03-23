@@ -72,6 +72,10 @@ const int MID_RANGE_LEFT_PIN = A11;
 const int LONG_RANGE_RIGHT_PIN = A15; 
 const int LONG_RANGE_LEFT_PIN = A13;
 
+///////////////////
+
+///////////////////
+
 //List of IR range sensors on the robot
 enum IR_SENSOR {
   LEFT_MID, 
@@ -195,6 +199,58 @@ double KalmanFilter(double rawdata, double prev_est){
   return a_post_est;
 }
 
+void IRCalibration(IR_SENSOR sensor) {
+  int val;
+  int count = 0;
+  double FinalValue = 0;
+  switch (sensor)
+  {
+    case LEFT_MID:  //MID_RANGE_LEFT_PIN      
+      while (count < 100) {
+        val = analogRead(MID_RANGE_LEFT_PIN);
+        FinalValue = FinalValue + val;
+        count++;
+      }
+        SerialCom->println(FinalValue / 100);
+        count = 0;
+        FinalValue = 0;
+      break;
+      
+    case LEFT_LONG: //LONG_RANGE_LEFT_PIN
+      while (count < 100) {
+        val = analogRead(LONG_RANGE_LEFT_PIN);
+        FinalValue = FinalValue + val;
+        count++;
+      }
+        SerialCom->println(FinalValue / 100);
+        count = 0;
+        FinalValue = 0;
+      break;
+      
+    case RIGHT_LONG: //LONG_RANGE_RIGHT_PIN
+      while (count < 100) {
+        val = analogRead(LONG_RANGE_RIGHT_PIN);
+        FinalValue = FinalValue + val;
+        count++;
+      }
+        SerialCom->println(FinalValue / 100);
+        count = 0;
+        FinalValue = 0;
+      break;
+      
+     case RIGHT_MID: //MID_RANGE_RIGHT_PIN
+      while (count < 100) {
+        val = analogRead(MID_RANGE_RIGHT_PIN);
+        FinalValue = FinalValue + val;
+        count++;
+      }
+        SerialCom->println(FinalValue / 100);
+        count = 0;
+        FinalValue = 0;
+      break;
+  }
+}
+
 ///////////////////////////////////////////////////////////////////
 
 STATE initialising() {
@@ -218,18 +274,18 @@ STATE running() {
     speed_change_smooth();
 
   #ifndef NO_READ_GYRO
-      GYRO_reading();
+      //GYRO_reading();
   #endif
   
   #ifndef NO_READ_IR
-      IR_reading(LEFT_MID);
-      IR_reading(LEFT_LONG);
-      IR_reading(RIGHT_MID);
-      IR_reading(RIGHT_LONG);
+      //IR_reading(LEFT_MID);
+      //IR_reading(LEFT_LONG);
+      //IR_reading(RIGHT_MID);
+      //IR_reading(RIGHT_LONG);
   #endif
   
   #ifndef NO_HC-SR04
-      HC_SR04_range();
+      //HC_SR04_range();
   #endif
   
   #ifndef NO_BATTERY_V_OK
@@ -238,36 +294,10 @@ STATE running() {
   }
 
   // PROTOTYPE 1 //////////////////////
-  double dist;
-  
-  LocateCorner();
-  MoveToCorner();
-  AlignEdge();
-  FollowEdge(15, LEFT);
-  DIRECTION direct = RIGHT;
-  DIRECTION follow_edge;
-  
-  while(0) { // distance read in direct direction < 15
-    Shift(direct);
-    Rotate180();
-    dist = FindCloseEdge();
-    if(dist > 0) {
-      follow_edge = LEFT;
-    } else {
-      follow_edge = RIGHT;
-    }
-    FollowEdge(abs(dist), follow_edge);
-    
-    if(direct = LEFT) {
-      direct = RIGHT;
-    } else {
-      direct = LEFT;
-    }
-  }
 
-  FollowEdge(15, direct);
+
   // END OF PROTOTYPE 1 ///////////////
-
+  IRCalibration(RIGHT_LONG);
   return RUNNING;
 }
 
