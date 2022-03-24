@@ -225,6 +225,15 @@ void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct) {
     left_front_motor.writeMicroseconds(1500 - speed_val);
     right_front_motor.writeMicroseconds(1500 - speed_val);
   }
+  else if(Left_Mid_Reading > SideDistance && direct == LEFT){
+    left_front_motor.writeMicroseconds(1500 + speed_val);
+    right_front_motor.writeMicroseconds(1500 + speed_val);
+  }
+  else if(Right_Mid_Reading < SideDistance && direct == RIGHT){
+    stop();
+    left_front_motor.writeMicroseconds(1500 - speed_val);
+    right_front_motor.writeMicroseconds(1500 - speed_val);
+  }
   else if(Right_Mid_Reading > SideDistance && direct == RIGHT){
     stop();
     left_front_motor.writeMicroseconds(1500 + speed_val);
