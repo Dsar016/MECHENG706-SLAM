@@ -198,7 +198,7 @@ void LocateCorner(void) {
 
   //get distance from array with circular indices (if i > n, return value val from next rotation of array)
   auto getDist = [&] (int i){
-    i = i - (i%n)*n
+    i = i - (i%n)*n;
     return distance[i];
   };
 
@@ -213,11 +213,10 @@ void LocateCorner(void) {
   RotateDeg(minIndex*(360/n)); 
 
   //correct if not pointing at the width (short) wall
-  if(getDist[minIndex] + getDist[minIndex + (int)(n/2)]) <
-   (getDist[minIndex + (int)(n/4)] + getDist[minIndex + (int)(3*n/4)])  RotateDeg(90);
-  
-  MoveToCorner();
-
+  if((getDist(minIndex) + getDist(minIndex + (int)(n/2))) < 
+    (getDist(minIndex + (int)(n/4)) + getDist(minIndex + (int)(3*n/4))))  
+      RotateDeg(90);
+      
 }
 
 void MoveToCorner(void) {
@@ -461,7 +460,7 @@ float HC_SR04_range()
     pulse_width = t2 - t1;
     if ( pulse_width > (MAX_DIST + 1000)) {
       SerialCom->println("HC-SR04: NOT found");
-      return;
+      return -1;
     }
   }
 
@@ -475,7 +474,7 @@ float HC_SR04_range()
     pulse_width = t2 - t1;
     if ( pulse_width > (MAX_DIST + 1000) ) {
       SerialCom->println("HC-SR04: Out of range");
-      return;
+      return 9999;
     }
   }
 
