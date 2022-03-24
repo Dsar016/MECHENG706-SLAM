@@ -81,14 +81,15 @@ enum IR_SENSOR {
 };
 
 //Define constants for IR sensor Calculations, excel sheet with calibrations are available on our google drive
-const double Mid_Left_Exponent = 1 / 1.001;
-const double Mid_Left_Power = pow(2362.6, Mid_Left_Exponent);
-const double Long_Left_Exponent = 1 / 0.901;
-const double Long_Left_Power = pow(3720.4, Long_Left_Exponent);
-const double Mid_Right_Exponent = 1 / 0.695;
-const double Mid_Right_Power = pow(2148.8, Mid_Right_Exponent);
+const double Mid_Left_Exponent = -1.024;
+const double Mid_Left_Value = 2567.6;
+const double Long_Left_Exponent = -1.073;
+const double Long_Left_Value = 7402.8;
+const double Mid_Right_Exponent = -0.976;
+const double Mid_Right_Value = 1978.5;
+const double Long_Right_Exponent = -1.151;
+const double Long_Right_Value = 12293;
 
-int Mid_Left_Value, Mid_Right_Value, Long_Left_Value, Long_Right_Value;
 double last_est = 15;
 double last_var = 30;
 double process_noise = 1; //High if the process itself has lots of noise
@@ -195,6 +196,19 @@ double KalmanFilter(double rawdata, double prev_est){
   return a_post_est;
 }
 
+double IRSensor(IR_SENSOR sensor){
+  switch(sensor){
+  case LEFT_MID: 
+  return analogRead(MID_RANGE_LEFT_PIN);
+  case LEFT_LONG: 
+  return analogRead(LONG_RANGE_LEFT_PIN);
+  case RIGHT_MID:
+  return analogRead(MID_RANGE_RIGHT_PIN);
+  case RIGHT_LONG:
+  return analogRead(LONG_RANGE_RIGHT_PIN);
+  }
+}
+
 ///////////////////////////////////////////////////////////////////
 
 STATE initialising() {
@@ -218,18 +232,18 @@ STATE running() {
     speed_change_smooth();
 
   #ifndef NO_READ_GYRO
-      GYRO_reading();
+      //GYRO_reading();
   #endif
   
   #ifndef NO_READ_IR
-      IR_reading(LEFT_MID);
-      IR_reading(LEFT_LONG);
+      //IR_reading(LEFT_MID);
+      //IR_reading(LEFT_LONG);
       IR_reading(RIGHT_MID);
       IR_reading(RIGHT_LONG);
   #endif
   
   #ifndef NO_HC-SR04
-      HC_SR04_range();
+      //HC_SR04_range();
   #endif
   
   #ifndef NO_BATTERY_V_OK
@@ -458,7 +472,7 @@ void IR_reading(IR_SENSOR sensor)
     case LEFT_MID:  //MID_RANGE_LEFT_PIN
       SerialCom->println("Mid Left IR Sensor: ");
       val = analogRead(MID_RANGE_LEFT_PIN); //Reading raw value from analog port
-      temp = (Mid_Left_Power) / (pow(val,Mid_Left_Exponent)); //Convert to mm distance based on sensor calibration
+      temp = Mid_Left_Value * pow(val,Mid_Left_Exponent); //Convert to mm distance based on sensor calibration
       est = KalmanFilter(temp, last_est);
       SerialCom->print("Unfiltered Value: ");
       SerialCom->print(temp); 
@@ -470,7 +484,7 @@ void IR_reading(IR_SENSOR sensor)
     case LEFT_LONG: //LONG_RANGE_LEFT_PIN
       SerialCom->println("Long Left IR Sensor: ");
       val = analogRead(LONG_RANGE_LEFT_PIN); //Reading raw value from analog port
-      temp = (Long_Left_Power) / (pow(val,Long_Left_Exponent)); //Convert to mm distance based on sensor calibration
+      temp = Long_Left_Value * pow(val,Long_Left_Exponent); //Convert to mm distance based on sensor calibration
       est = KalmanFilter(temp, last_est);
       SerialCom->print("Unfiltered Value: ");
       SerialCom->print(temp); 
@@ -480,9 +494,10 @@ void IR_reading(IR_SENSOR sensor)
       SerialCom->println(" Cm");
       break;
     case RIGHT_LONG: //LONG_RANGE_RIGHT_PIN
-      SerialCom->println("Long Right IR Sensor: ");
+      SerialCom->print("Long Right IR Sensor: ");
       val = analogRead(LONG_RANGE_RIGHT_PIN); //Reading raw value from analog port
-      temp = -(log(val / 379.76)/0.056); //Convert to mm distance based on sensor calibration
+      SerialCom->println(val);
+      temp = Long_Right_Value * pow(val,Long_Right_Exponent); //Convert to mm distance based on sensor calibration
       est = KalmanFilter(temp, last_est);
       SerialCom->print("Unfiltered Value: ");
       SerialCom->print(temp); 
@@ -494,7 +509,7 @@ void IR_reading(IR_SENSOR sensor)
      case RIGHT_MID: //MID_RANGE_RIGHT_PIN
       SerialCom->println("Mid Right IR Sensor: ");
       val = analogRead(MID_RANGE_RIGHT_PIN); //Reading raw value from analog port
-      temp = (Mid_Right_Power) / (pow(val,Mid_Right_Exponent)); //Convert to mm distance based on sensor calibration
+      temp = Mid_Right_Value * pow(val,Mid_Right_Exponent); //Convert to mm distance based on sensor calibration
       SerialCom->print("Unfiltered Value: ");
       SerialCom->print(temp); 
       SerialCom->println(" Cm");
