@@ -87,7 +87,6 @@ const int Long_Left_Exponent = 1 / 0.901;
 const int Long_Left_Power = pow(3720.4, Long_Left_Exponent);
 const int Mid_Right_Exponent = 1 / 0.695;
 const int Mid_Right_Power = pow(2148.8, Mid_Right_Exponent);
-
 //Long Right Sensor uses a logarithmic equation instead of a power equation, so the constants are defined differently, they need to be calculated every loop, as the changing reading is right in the middle of the equation
 
 //Gyro Analog Pin
@@ -187,13 +186,37 @@ ISR(TIMER2_COMPA_vect) {
 
 void LocateCorner(void) {
   
-  const short n = 72;
+  const short n = 72; //division of measurement circle (n measurements for 360deg). most accurate as large multiple of 4
   float distance[n];
+  int minIndex = 0; 
 
-  for(int i = 0; i < 72; i++){ //populate measurement array
+  //not used, keep just in case this method doesnt work
+  // auto approxEquals = [] (float a, float b, int tolerance){
+  //   if(a >= (b - tolerance) && a <= (b+tolerance)) return true;
+  //   return false;
+  // };
+
+  //get distance from array with circular indices (if i > n, return value val from next rotation of array)
+  auto getDist = [&] (int i){
+    i = i - (i%n)*n
+    return distance[i];
+  };
+
+  //rotate car, populate measurement array and find min distance to wall
+  for(int i = 0; i < 72; i++){
     RotateDeg(i*(360/n));
     distance[i] = HC_SR04_range();
+    minIndex = distance[i] < distance[minIndex] ? minIndex : i;
   }
+
+  //rotate to minimum dist to wall
+  RotateDeg(minIndex*(360/n)); 
+
+  //correct if not pointing at the width (short) wall
+  if(getDist[minIndex] + getDist[minIndex + (int)(n/2)]) <
+   (getDist[minIndex + (int)(n/4)] + getDist[minIndex + (int)(3*n/4)])  RotateDeg(90);
+  
+  MoveToCorner();
 
 }
 
