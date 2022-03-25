@@ -117,9 +117,13 @@ void setup(void)
   digitalWrite(TRIG_PIN, LOW);
 
   cli();
+<<<<<<< HEAD
   OCR2A = 16000l;
+=======
+  OCR2A = 250;
+>>>>>>> AxisDriveFunctions
   TCCR2A |= (1 << WGM11); // CTC mode
-  TCCR2B |= (1 << CS10); // no prescaler
+  TCCR2B |= (1 << CS01) | (1<<CS00); // no prescaler
   TIMSK2 |= (1 << OCIE1A);
   sei();
 
@@ -153,7 +157,7 @@ void loop(void) //main loop
 ///////////////////// PROTOTYPE 1 FUNCTIONS ///////////////////////
 
 int speedX = 0, speedY = 0, rSpeedZ = 0; // m/s and rad/s
-const float L1 = 0.10, L2 = 0.08; //dimensions in m
+const float L1 = 0.09, L2 = 0.09; //dimensions in m
 
 int msCount2 = 0; //millisecond count on timer 2
 
@@ -162,9 +166,9 @@ int msCount2 = 0; //millisecond count on timer 2
  */
 void DriveXYZ() {
   left_front_motor.writeMicroseconds(1500 + speedX + speedY - (L1+L2)*rSpeedZ);
-  right_front_motor.writeMicroseconds(1500 + speedX - speedY + (L1+L2)*rSpeedZ);
-  left_rear_motor.writeMicroseconds(1500 + speedX - speedY  - (L1+L2)*rSpeedZ);
-  right_rear_motor.writeMicroseconds(1500 + speedX + speedY + (L1+L2)*rSpeedZ);
+  left_rear_motor.writeMicroseconds(1500 + speedX - speedY + (L1+L2)*rSpeedZ);
+  right_rear_motor.writeMicroseconds(1500 - speedX - speedY  - (L1+L2)*rSpeedZ);
+  right_front_motor.writeMicroseconds(1500 - speedX + speedY + (L1+L2)*rSpeedZ);
 }
 
 void RotateDeg(float degrees = 0){
@@ -260,6 +264,7 @@ STATE initialising() {
 
 STATE running() {
 
+  
   static unsigned long previous_millis;
 
   if (millis() - previous_millis > 500) {  //Arduino style 500ms timed execution statement
