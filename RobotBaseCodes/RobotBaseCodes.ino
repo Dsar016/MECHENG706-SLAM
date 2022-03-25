@@ -21,6 +21,7 @@
 */
 #include <Servo.h>  //Need for Servo pulse output
 
+
 // Wireless Serial ////////////////////////////////////////////////////////
 // To print to wireless module use BluetoothSerial.print(...);
 #include <SoftwareSerial.h>
@@ -126,10 +127,14 @@ void setup(void)
   digitalWrite(TRIG_PIN, LOW);
 
   cli();
-  OCR2A = 16000l;
-  TCCR2A |= (1 << WGM11); // CTC mode
-  TCCR2B |= (1 << CS10); // no prescaler
-  TIMSK2 |= (1 << OCIE1A);
+   //set timer2 interrupt at 1000Hz
+   OCR2A = 125; //(must be <256)
+   TCCR2A |= (1 << WGM11); // turn on CTC mode
+   TCCR2B |= (1 << CS22); // Prescaler 128
+   TCCR2B |= (1 << CS20);  
+   // enable timer compare interrupt
+   TIMSK2 |= (1 << OCIE1A);
+
   sei();
 
   // Setup the Serial port and pointer, the pointer allows switching the debug info through the USB port(Serial) or Bluetooth port(Serial1) with ease.
@@ -188,10 +193,6 @@ void RotateDeg(float degrees = 0){
   rSpeedZ = 0;
 }
 
-ISR(TIMER2_COMPA_vect) {
-  TCNT2 = 0;
-  msCount2++;
-}
 
 void LocateCorner(void) {
   
@@ -205,8 +206,20 @@ void LocateCorner(void) {
 
 }
 
-void MoveToCorner(void) {
-  
+void MoveToCorner(float distance) {
+  forward();
+  int count  = 0;
+  float ultrasonic;
+  // Stop driving when closer than distance cm
+  while (count <= 20) {
+    ultrasonic = HC_SR04_range();
+    SerialCom->print("Count: ");
+    SerialCom->println(count);
+    if (ultrasonic <= distance) {
+      count = count + 1;
+    }
+  }
+  stop();
 }
 
 void AlignEdge(void) {
@@ -321,8 +334,43 @@ double IRSensorReading(IR_SENSOR sensor){
       return est;
   }
   
+double CurrentIR[5];
+double Average[5];
+double oldIR[5][10];
+int timer2i = 0;
+
+ISR(TIMER2_COMPA_vect){//timer4 interrupt 1024Hz
+// Take and compare new IR sensor readings with previous sensor readings
+  
+  // Find current sensor readings
+  CurrentIR[0] = IRSensorReading(LEFT_MID);
+  CurrentIR[1] = IRSensorReading(RIGHT_MID);
+  CurrentIR[2] = IRSensorReading(LEFT_LONG);
+  CurrentIR[3] = IRSensorReading(RIGHT_LONG);
+  CurrentIR[4] = HC_SR04_range();
+  
+  double total;
+  // Find average reading from past 10 readings
+  for (int n = 0; n < 5; n++) {
+    total = 0;
+    for (int m = 0; m < 10; m++) {
+      total = oldIR[n][m] + total;
+    }
+    Average[n] = total/10;
+  }
+  
+  // Add current reading to old readings
+  oldIR[0][timer2i] = CurrentIR[0];
+  oldIR[1][timer2i] = CurrentIR[1];
+  oldIR[2][timer2i] = CurrentIR[2];
+  oldIR[3][timer2i] = CurrentIR[3];
+  oldIR[4][timer2i] = CurrentIR[4];
+  
+  timer2i = (timer2i+1)%10;
 }
 
+// TEMP FUNCTION
+double IRSensorReading(IR_SENSOR sensor) {return 10;}
 ///////////////////////////////////////////////////////////////////
 
 STATE initialising() {
@@ -396,8 +444,7 @@ STATE running() {
 
   FollowEdge(15, direct);
   */
-  //FollowEdge(15, 15, LEFT);
-  //delay(20000);
+
   // END OF PROTOTYPE 1 ///////////////
 
   return RUNNING;
