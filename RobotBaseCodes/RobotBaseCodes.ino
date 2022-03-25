@@ -218,16 +218,17 @@ void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct) {
   ultrasonic = HC_SR04_range();
   Left_Mid_Reading = (Mid_Left_Power) / (pow(analogRead(MID_RANGE_LEFT_PIN),Mid_Left_Exponent));
   Right_Mid_Reading = (Mid_Right_Power) / (pow(analogRead(MID_RANGE_RIGHT_PIN),Mid_Right_Exponent));
-  //Robot starts moving forward, will add IR Sensor reading and direct later, depending on controller
+  
+  //Robot starts moving forward while IR sensor is checking the distance between the side wall
   while(forward){
   if(Left_Mid_Reading < SideDistance && direct == LEFT){
     stop();
-    left_front_motor.writeMicroseconds(1500 - speed_val);
-    right_front_motor.writeMicroseconds(1500 - speed_val);
-  }
-  else if(Left_Mid_Reading > SideDistance && direct == LEFT){
     left_front_motor.writeMicroseconds(1500 + speed_val);
     right_front_motor.writeMicroseconds(1500 + speed_val);
+  }
+  else if(Left_Mid_Reading > SideDistance && direct == LEFT){
+    left_front_motor.writeMicroseconds(1500 - speed_val);
+    right_front_motor.writeMicroseconds(1500 - speed_val);
   }
   else if(Right_Mid_Reading < SideDistance && direct == RIGHT){
     stop();
