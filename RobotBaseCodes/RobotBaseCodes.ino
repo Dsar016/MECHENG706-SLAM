@@ -295,15 +295,30 @@ double KalmanFilter(double rawdata, double prev_est){
 }
 
 double IRSensorReading(IR_SENSOR sensor){
+  int val;
+  double temp, est, var;
+  
   switch(sensor){
   case LEFT_MID: 
-  return analogRead(MID_RANGE_LEFT_PIN);
-  case LEFT_LONG: 
-  return analogRead(LONG_RANGE_LEFT_PIN);
+      val = analogRead(MID_RANGE_LEFT_PIN); //Reading raw value from analog port
+      temp = Mid_Left_Value * pow(val,Mid_Left_Exponent); //Convert to mm distance based on sensor calibration
+      est = KalmanFilter(temp, last_est);
+      return est;
+  case LEFT_LONG:
+      val = analogRead(LONG_RANGE_LEFT_PIN); //Reading raw value from analog port
+      temp = Long_Left_Value * pow(val,Long_Left_Exponent); //Convert to mm distance based on sensor calibration
+      est = KalmanFilter(temp, last_est); 
+      return est;
   case RIGHT_MID:
-  return analogRead(MID_RANGE_RIGHT_PIN);
+      val = analogRead(MID_RANGE_RIGHT_PIN); //Reading raw value from analog port
+      temp = Mid_Right_Value * pow(val,Mid_Right_Exponent); //Convert to mm distance based on sensor calibration
+      est = KalmanFilter(temp, last_est);
+      return est;
   case RIGHT_LONG:
-  return analogRead(LONG_RANGE_RIGHT_PIN);
+      val = analogRead(LONG_RANGE_RIGHT_PIN); //Reading raw value from analog port
+      temp = Long_Right_Value * pow(val,Long_Right_Exponent); //Convert to mm distance based on sensor calibration
+      est = KalmanFilter(temp, last_est);
+      return est;
   }
   
 }
@@ -381,8 +396,8 @@ STATE running() {
 
   FollowEdge(15, direct);
   */
-  FollowEdge(15, 15, LEFT);
-  delay(20000);
+  //FollowEdge(15, 15, LEFT);
+  //delay(20000);
   // END OF PROTOTYPE 1 ///////////////
 
   return RUNNING;
@@ -615,6 +630,7 @@ void IR_reading(IR_SENSOR sensor)
       SerialCom->println("Mid Right IR Sensor: ");
       val = analogRead(MID_RANGE_RIGHT_PIN); //Reading raw value from analog port
       temp = Mid_Right_Value * pow(val,Mid_Right_Exponent); //Convert to mm distance based on sensor calibration
+      est = KalmanFilter(temp, last_est);
       SerialCom->print("Unfiltered Value: ");
       SerialCom->print(temp); 
       SerialCom->println(" Cm");
