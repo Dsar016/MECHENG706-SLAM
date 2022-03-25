@@ -32,7 +32,7 @@ SoftwareSerial BluetoothSerial(BLUETOOTH_RX, BLUETOOTH_TX);
 ///////////////////////////////////////////////////////////////////////////
 
 //#define NO_READ_GYRO  //Uncomment of GYRO is not attached.
-//#define NO_HC-SR04 //Uncomment of HC-SR04 ultrasonic ranging sensor is not attached.
+//#define NO_HCSR04 //Uncomment of HC-SR04 ultrasonic ranging sensor is not attached.
 //#define NO_READ_IR //Uncomment if IR Sensors not attached
 //#define NO_BATTERY_V_OK //Uncomment of BATTERY_V_OK if you do not care about battery damage.
 
@@ -125,6 +125,13 @@ void setup(void)
   pinMode(TRIG_PIN, OUTPUT);
   digitalWrite(TRIG_PIN, LOW);
 
+  cli();
+  OCR2A = 16000l;
+  TCCR2A |= (1 << WGM11); // CTC mode
+  TCCR2B |= (1 << CS10); // no prescaler
+  TIMSK2 |= (1 << OCIE1A);
+  sei();
+
   // Setup the Serial port and pointer, the pointer allows switching the debug info through the USB port(Serial) or Bluetooth port(Serial1) with ease.
   SerialCom = &Serial;
   SerialCom->begin(115200);
@@ -149,13 +156,53 @@ void loop(void) //main loop
     case STOPPED: //Stop of Lipo Battery voltage is too low, to protect Battery
       machine_state =  stopped();
       break;
-  };
+  }
 }
 
 ///////////////////// PROTOTYPE 1 FUNCTIONS ///////////////////////
 
+int speedX = 0, speedY = 0, rSpeedZ = 0; // m/s and rad/s
+const float L1 = 0.10, L2 = 0.08; //dimensions in m
+
+int msCount2 = 0; //millisecond count on timer 2
+
+/**
+ * updates the x and y speeds of the robot according to the global speed variables
+ */
+void DriveXYZ() {
+  left_front_motor.writeMicroseconds(1500 + speedX + speedY - (L1+L2)*rSpeedZ);
+  right_front_motor.writeMicroseconds(1500 + speedX - speedY + (L1+L2)*rSpeedZ);
+  left_rear_motor.writeMicroseconds(1500 + speedX - speedY  - (L1+L2)*rSpeedZ);
+  right_rear_motor.writeMicroseconds(1500 + speedX + speedY + (L1+L2)*rSpeedZ);
+}
+
+void RotateDeg(float degrees = 0){
+  float theta = 0;
+  rSpeedZ = 10;
+ 
+  while(theta < degrees){
+    DriveXYZ();
+    theta = rSpeedZ * (PI/180) * (1000*msCount2);
+  }
+
+  rSpeedZ = 0;
+}
+
+ISR(TIMER2_COMPA_vect) {
+  TCNT2 = 0;
+  msCount2++;
+}
+
 void LocateCorner(void) {
   
+  const short n = 72;
+  float distance[n];
+
+  for(int i = 0; i < 72; i++){ //populate measurement array
+    RotateDeg(i*(360/n));
+    distance[i] = HC_SR04_range();
+  }
+
 }
 
 void MoveToCorner(void) {
@@ -166,16 +213,67 @@ void AlignEdge(void) {
   
 }
 
-void FollowEdge(int distance, DIRECTION direct) {
+void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct) {
+  float Left_Mid_Reading;
+  float Right_Mid_Reading;
+  float ultrasonic;
+  Left_Mid_Reading = (Mid_Left_Power) / (pow(analogRead(MID_RANGE_LEFT_PIN),Mid_Left_Exponent));
+  Right_Mid_Reading = (Mid_Right_Power) / (pow(analogRead(MID_RANGE_RIGHT_PIN),Mid_Right_Exponent));
+  ultrasonic = HC_SR04_range();
+  //Robot starts moving forward, will add IR Sensor reading
+  forward();
+  while(ultrasonic <= ForwardDistance){
+  ultrasonic = HC_SR04_range();
+  Left_Mid_Reading = (Mid_Left_Power) / (pow(analogRead(MID_RANGE_LEFT_PIN),Mid_Left_Exponent));
+  Right_Mid_Reading = (Mid_Right_Power) / (pow(analogRead(MID_RANGE_RIGHT_PIN),Mid_Right_Exponent));
   
+  //Robot starts moving forward while IR sensor is checking the distance between the side wall
+  while(forward){
+  if(Left_Mid_Reading < SideDistance && direct == LEFT){
+    stop();
+    left_front_motor.writeMicroseconds(1500 + speed_val);
+    right_front_motor.writeMicroseconds(1500 + speed_val);
+  }
+  else if(Left_Mid_Reading > SideDistance && direct == LEFT){
+    stop();
+    left_front_motor.writeMicroseconds(1500 - speed_val);
+    right_front_motor.writeMicroseconds(1500 - speed_val);
+  }
+  else if(Right_Mid_Reading < SideDistance && direct == RIGHT){
+    stop();
+    left_front_motor.writeMicroseconds(1500 - speed_val);
+    right_front_motor.writeMicroseconds(1500 - speed_val);
+  }
+  else if(Right_Mid_Reading > SideDistance && direct == RIGHT){
+    stop();
+    left_front_motor.writeMicroseconds(1500 + speed_val);
+    right_front_motor.writeMicroseconds(1500 + speed_val);
+  }
+   else{
+    forward();
+   }
+  }
+  stop();
+ }
 }
 
 void Shift(DIRECTION direct) {
-  
+  // Start motor in correct directions
+  if(direct == LEFT) {
+    strafe_left();
+  } else if(direct == RIGHT) {
+    strafe_right();
+  }
+
+  delay(2500);
+  stop();
 }
 
+// Rotates the robot by rougly 180 degrees
 void Rotate180(void) {
-  
+  cw(); // Send motors clockwise
+  delay(5000);
+  stop();
 }
 
 double FindCloseEdge(void) {
@@ -242,8 +340,8 @@ STATE running() {
       IR_reading(RIGHT_LONG);
   #endif
   
-  #ifndef NO_HC-SR04
-      //HC_SR04_range();
+  #ifndef NO_HCSR04
+      HC_SR04_range();
   #endif
   
   #ifndef NO_BATTERY_V_OK
@@ -252,6 +350,7 @@ STATE running() {
   }
 
   // PROTOTYPE 1 //////////////////////
+  /*
   double dist;
   
   LocateCorner();
@@ -260,7 +359,7 @@ STATE running() {
   FollowEdge(15, LEFT);
   DIRECTION direct = RIGHT;
   DIRECTION follow_edge;
-  
+
   while(0) { // distance read in direct direction < 15
     Shift(direct);
     Rotate180();
@@ -280,6 +379,9 @@ STATE running() {
   }
 
   FollowEdge(15, direct);
+  */
+  FollowEdge(15, 15, LEFT);
+  delay(20000);
   // END OF PROTOTYPE 1 ///////////////
 
   return RUNNING;
@@ -402,8 +504,8 @@ boolean is_battery_voltage_OK()
 }
 #endif
 
-#ifndef NO_HC-SR04
-void HC_SR04_range()
+#ifndef NO_HCSR04
+float HC_SR04_range()
 {
   unsigned long t1;
   unsigned long t2;
@@ -458,6 +560,8 @@ void HC_SR04_range()
     SerialCom->print(cm);
     SerialCom->println("cm");
   }
+
+  return cm;
 }
 #endif
 
