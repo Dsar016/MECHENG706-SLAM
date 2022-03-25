@@ -117,14 +117,15 @@ void setup(void)
   digitalWrite(TRIG_PIN, LOW);
 
   cli();
-<<<<<<< HEAD
-  OCR2A = 16000l;
-=======
-  OCR2A = 250;
->>>>>>> AxisDriveFunctions
-  TCCR2A |= (1 << WGM11); // CTC mode
-  TCCR2B |= (1 << CS01) | (1<<CS00); // no prescaler
-  TIMSK2 |= (1 << OCIE1A);
+
+  //set timer2 interrupt at 1000Hz
+   OCR2A = 125; //(must be <256)
+   TCCR2A |= (1 << WGM11); // turn on CTC mode
+   TCCR2B |= (1 << CS22); // Prescaler 128
+   TCCR2B |= (1 << CS20);
+   // enable timer compare interrupt
+   TIMSK2 |= (1 << OCIE1A);
+  
   sei();
 
   // Setup the Serial port and pointer, the pointer allows switching the debug info through the USB port(Serial) or Bluetooth port(Serial1) with ease.
@@ -157,30 +158,35 @@ void loop(void) //main loop
 ///////////////////// PROTOTYPE 1 FUNCTIONS ///////////////////////
 
 int speedX = 0, speedY = 0, rSpeedZ = 0; // m/s and rad/s
-const float L1 = 0.09, L2 = 0.09; //dimensions in m
+const float L1 = 1, L2 = 1; //dimensions in m
+const float SpeedtoRad = 1.47; 
 
-int msCount2 = 0; //millisecond count on timer 2
+unsigned int msCount2 = 0; //millisecond count on timer 2
 
 /**
  * updates the x and y speeds of the robot according to the global speed variables
  */
 void DriveXYZ() {
-  left_front_motor.writeMicroseconds(1500 + speedX + speedY - (L1+L2)*rSpeedZ);
+  left_front_motor.writeMicroseconds(1500 + speedX + speedY + (L1+L2)*rSpeedZ);
   left_rear_motor.writeMicroseconds(1500 + speedX - speedY + (L1+L2)*rSpeedZ);
-  right_rear_motor.writeMicroseconds(1500 - speedX - speedY  - (L1+L2)*rSpeedZ);
+  right_rear_motor.writeMicroseconds(1500 - speedX - speedY  + (L1+L2)*rSpeedZ);
   right_front_motor.writeMicroseconds(1500 - speedX + speedY + (L1+L2)*rSpeedZ);
 }
 
-void RotateDeg(float degrees = 0){
-  float theta = 0;
-  rSpeedZ = 10;
+void RotateDeg(float deg = 0.0){
+  msCount2 = 0;
+  float theta = 0.0;
+  rSpeedZ = 100;
  
-  while(theta < degrees){
+  while(theta < deg){
     DriveXYZ();
-    theta = rSpeedZ * (PI/180) * (1000*msCount2);
+    theta = rSpeedZ * (180.0/PI) * (SpeedtoRad/100.0) * (msCount2/1000.0); 
+    SerialCom->println(theta);
   }
 
   rSpeedZ = 0;
+  DriveXYZ();
+  SerialCom->println("stop");
 }
 
 ISR(TIMER2_COMPA_vect) {
@@ -294,7 +300,7 @@ STATE running() {
   }
 
   // PROTOTYPE 1 //////////////////////
-  double dist;
+  /*double dist;
   
   LocateCorner();
   MoveToCorner();
@@ -321,7 +327,9 @@ STATE running() {
     }
   }
 
-  FollowEdge(15, direct);
+  FollowEdge(15, direct);*/
+  RotateDeg(5);
+  delay(100000000000);
   // END OF PROTOTYPE 1 ///////////////
 
   return RUNNING;
