@@ -181,7 +181,7 @@ void RotateDeg(float deg = 0.0){
   while(theta < deg){
     DriveXYZ();
     theta = rSpeedZ * (180.0/PI) * (SpeedtoRad/100.0) * (msCount2/1000.0); 
-    SerialCom->println(theta);
+    SerialCom->println(deg);
   }
 
   rSpeedZ = 0;
@@ -214,18 +214,18 @@ void LocateCorner(void) {
 
   //rotate car, populate measurement array and find min distance to wall
   for(int i = 0; i < 72; i++){
-    RotateDeg(i*(360/n));
+    RotateDeg((360/n)-1);
     distance[i] = HC_SR04_range();
     minIndex = distance[i] < distance[minIndex] ? minIndex : i;
   }
 
-  //rotate to minimum dist to wall
+ /* //rotate to minimum dist to wall
   RotateDeg(minIndex*(360/n)); 
 
   //correct if not pointing at the width (short) wall
   if((getDist(minIndex) + getDist(minIndex + (int)(n/2))) < 
     (getDist(minIndex + (int)(n/4)) + getDist(minIndex + (int)(3*n/4))))  
-      RotateDeg(90);
+      RotateDeg(90);*/
       
 }
 
@@ -328,7 +328,7 @@ STATE running() {
   }
 
   FollowEdge(15, direct);*/
-  RotateDeg(5);
+  LocateCorner();
   delay(100000000000);
   // END OF PROTOTYPE 1 ///////////////
 
