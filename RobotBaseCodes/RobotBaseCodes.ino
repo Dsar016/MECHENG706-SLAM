@@ -333,7 +333,9 @@ double IRSensorReading(IR_SENSOR sensor){
       est = KalmanFilter(temp, last_est);
       return est;
   }
-  
+}
+
+
 double CurrentIR[5];
 double Average[5];
 double oldIR[5][10];
@@ -368,9 +370,6 @@ ISR(TIMER2_COMPA_vect){//timer4 interrupt 1024Hz
   
   timer2i = (timer2i+1)%10;
 }
-
-// TEMP FUNCTION
-double IRSensorReading(IR_SENSOR sensor) {return 10;}
 ///////////////////////////////////////////////////////////////////
 
 STATE initialising() {
@@ -405,7 +404,7 @@ STATE running() {
   #endif
   
   #ifndef NO_HCSR04
-      //HC_SR04_range();
+      HC_SR04_range();
   #endif
   
   #ifndef NO_BATTERY_V_OK
@@ -444,7 +443,20 @@ STATE running() {
 
   FollowEdge(15, direct);
   */
+  SerialCom->println("LEFT_MID");
+  SerialCom->println(Average[0]);
 
+  SerialCom->println("RIGHT_MID");
+  SerialCom->println(Average[1]);
+
+  SerialCom->println("LEFT_LONG");
+  SerialCom->println(Average[2]);
+
+  SerialCom->println("RIGHT_LONG");
+  SerialCom->println(Average[3]);
+
+  SerialCom->println("ULTRASONIC");
+  SerialCom->println(Average[4]);
   // END OF PROTOTYPE 1 ///////////////
 
   return RUNNING;
@@ -587,7 +599,7 @@ float HC_SR04_range()
     t2 = micros();
     pulse_width = t2 - t1;
     if ( pulse_width > (MAX_DIST + 1000)) {
-      SerialCom->println("HC-SR04: NOT found");
+      //SerialCom->println("HC-SR04: NOT found");
       return;
     }
   }
@@ -601,7 +613,7 @@ float HC_SR04_range()
     t2 = micros();
     pulse_width = t2 - t1;
     if ( pulse_width > (MAX_DIST + 1000) ) {
-      SerialCom->println("HC-SR04: Out of range");
+      //SerialCom->println("HC-SR04: Out of range");
       return;
     }
   }
@@ -617,11 +629,11 @@ float HC_SR04_range()
 
   // Print out results
   if ( pulse_width > MAX_DIST ) {
-    SerialCom->println("HC-SR04: Out of range");
+    //SerialCom->println("HC-SR04: Out of range");
   } else {
-    SerialCom->print("HC-SR04:");
-    SerialCom->print(cm);
-    SerialCom->println("cm");
+    //SerialCom->print("HC-SR04:");
+    //SerialCom->print(cm);
+    //SerialCom->println("cm");
   }
 
   return cm;
