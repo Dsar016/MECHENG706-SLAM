@@ -54,6 +54,12 @@ enum DIRECTION {
   CW
 };
 
+// Moving Average
+double CurrentIR[5];
+double Average[5];
+double oldIR[5][10];
+int timer2i = 0;
+
 //Refer to Shield Pinouts.jpg for pin locations
 
 //Default motor control pins
@@ -216,21 +222,22 @@ void AlignEdge(void) {
 }
 
 void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct) {
+  UpdateSensors();
   float Left_Mid_Reading;
   float Right_Mid_Reading;
   float ultrasonic;
 
-  Left_Mid_Reading = Mid_Left_Value * pow(analogRead(MID_RANGE_LEFT_PIN),Mid_Left_Exponent);
-  Right_Mid_Reading = Mid_Right_Value * pow(analogRead(MID_RANGE_RIGHT_PIN),Mid_Right_Exponent);
+  Left_Mid_Reading = Average[0];
+  Right_Mid_Reading = Average[1];
 
-  ultrasonic = HC_SR04_range();
+  ultrasonic = Average[4];
   //Robot starts moving forward, will add IR Sensor reading
   forward();
   while(ultrasonic <= ForwardDistance){
-  ultrasonic = HC_SR04_range();
+  ultrasonic = Average[4];
 
-  Left_Mid_Reading = Mid_Left_Value * pow(analogRead(MID_RANGE_LEFT_PIN),Mid_Left_Exponent);
-  Right_Mid_Reading = Mid_Right_Value * pow(analogRead(MID_RANGE_RIGHT_PIN),Mid_Right_Exponent);
+  Left_Mid_Reading = Average[0];
+  Right_Mid_Reading = Average[1];
 
   
   //Robot starts moving forward while IR sensor is checking the distance between the side wall
@@ -328,11 +335,35 @@ double IRSensorReading(IR_SENSOR sensor){
   }
 }
 
-
-double CurrentIR[5];
-double Average[5];
-double oldIR[5][10];
-int timer2i = 0;
+void UpdateSensors() {
+  // Take and compare new IR sensor readings with previous sensor readings
+  
+  // Find current sensor readings
+  CurrentIR[0] = IRSensorReading(LEFT_MID);
+  CurrentIR[1] = IRSensorReading(RIGHT_MID);
+  CurrentIR[2] = IRSensorReading(LEFT_LONG);
+  CurrentIR[3] = IRSensorReading(RIGHT_LONG);
+  CurrentIR[4] = HC_SR04_range();
+  
+  double total;
+  // Find average reading from past 10 readings
+  for (int n = 0; n < 5; n++) {
+    total = 0;
+    for (int m = 0; m < 10; m++) {
+      total = oldIR[n][m] + total;
+    }
+    Average[n] = total/10;
+  }
+  
+  // Add current reading to old readings
+  oldIR[0][timer2i] = CurrentIR[0];
+  oldIR[1][timer2i] = CurrentIR[1];
+  oldIR[2][timer2i] = CurrentIR[2];
+  oldIR[3][timer2i] = CurrentIR[3];
+  oldIR[4][timer2i] = CurrentIR[4];
+  
+  timer2i = (timer2i+1)%10;
+}
 ///////////////////////////////////////////////////////////////////
 
 STATE initialising() {
@@ -406,36 +437,7 @@ STATE running() {
 
   FollowEdge(15, direct);
   */
-  // Take and compare new IR sensor readings with previous sensor readings
-  
-  // Find current sensor readings
-  CurrentIR[0] = IRSensorReading(LEFT_MID);
-  CurrentIR[1] = IRSensorReading(RIGHT_MID);
-  CurrentIR[2] = IRSensorReading(LEFT_LONG);
-  CurrentIR[3] = IRSensorReading(RIGHT_LONG);
-  CurrentIR[4] = HC_SR04_range();
-  
-  double total;
-  // Find average reading from past 10 readings
-  for (int n = 0; n < 5; n++) {
-    total = 0;
-    for (int m = 0; m < 10; m++) {
-      total = oldIR[n][m] + total;
-    }
-    Average[n] = total/10;
-  }
-  
-  // Add current reading to old readings
-  oldIR[0][timer2i] = CurrentIR[0];
-  oldIR[1][timer2i] = CurrentIR[1];
-  oldIR[2][timer2i] = CurrentIR[2];
-  oldIR[3][timer2i] = CurrentIR[3];
-  oldIR[4][timer2i] = CurrentIR[4];
-  
-  timer2i = (timer2i+1)%10;
-  // END OF PROTOTYPE 1 ///////////////
-
-  return RUNNING;
+  FollowEdge(15, 15, LEFT);
 }
 
 
