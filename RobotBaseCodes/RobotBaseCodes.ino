@@ -263,7 +263,7 @@ ISR(TIMER2_COMPA_vect){//timer4 interrupt 1024Hz
   
   double total;
   // Find average reading from past 10 readings
-  for (int n = 0; n < 4; n++) {
+  for (int n = 0; n < 5; n++) {
     total = 0;
     for (int m = 0; m < 10; m++) {
       total = oldIR[n][m] + total;
@@ -276,7 +276,7 @@ ISR(TIMER2_COMPA_vect){//timer4 interrupt 1024Hz
   oldIR[1][i] = CurrentIR[1];
   oldIR[2][i] = CurrentIR[2];
   oldIR[3][i] = CurrentIR[3];
-
+  oldIR[4][i] = CurrentIR[4];
   
   i = (i+1)%10;
 }
