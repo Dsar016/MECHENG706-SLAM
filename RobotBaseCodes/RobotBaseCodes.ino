@@ -91,9 +91,9 @@ const double Long_Right_Exponent = -1.151;
 const double Long_Right_Value = 12293;
 
 double last_est = 15;
-double last_var = 30;
-double process_noise = 1; //High if the process itself has lots of noise
-double sensor_noise = 10; //High if the sensor has lots of noise
+double last_var = 999;
+double process_noise = 10; //High if the process itself has lots of noise
+double sensor_noise = 1; //High if the sensor has lots of noise
 //Note: these noises are relative to each other, so if the process is stable, the sensor noise value will be larger due to this
 
 //Long Right Sensor uses a logarithmic equation instead of a power equation, so the constants are defined differently, they need to be calculated every loop, as the changing reading is right in the middle of the equation
@@ -217,15 +217,15 @@ void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct) {
   float Left_Mid_Reading;
   float Right_Mid_Reading;
   float ultrasonic;
-  Left_Mid_Reading = (Mid_Left_Power) / (pow(analogRead(MID_RANGE_LEFT_PIN),Mid_Left_Exponent));
-  Right_Mid_Reading = (Mid_Right_Power) / (pow(analogRead(MID_RANGE_RIGHT_PIN),Mid_Right_Exponent));
+  Left_Mid_Reading = Mid_Left_Value * pow(analogRead(MID_RANGE_LEFT_PIN),Mid_Left_Exponent);
+  Right_Mid_Reading = Mid_Right_Value * pow(analogRead(MID_RANGE_RIGHT_PIN),Mid_Right_Exponent);
   ultrasonic = HC_SR04_range();
   //Robot starts moving forward, will add IR Sensor reading
   forward();
   while(ultrasonic <= ForwardDistance){
   ultrasonic = HC_SR04_range();
-  Left_Mid_Reading = (Mid_Left_Power) / (pow(analogRead(MID_RANGE_LEFT_PIN),Mid_Left_Exponent));
-  Right_Mid_Reading = (Mid_Right_Power) / (pow(analogRead(MID_RANGE_RIGHT_PIN),Mid_Right_Exponent));
+  Left_Mid_Reading = Mid_Left_Value * pow(analogRead(MID_RANGE_LEFT_PIN),Mid_Left_Exponent);
+  Right_Mid_Reading = Mid_Right_Value * pow(analogRead(MID_RANGE_RIGHT_PIN),Mid_Right_Exponent);
   
   //Robot starts moving forward while IR sensor is checking the distance between the side wall
   while(forward){
@@ -294,7 +294,7 @@ double KalmanFilter(double rawdata, double prev_est){
   return a_post_est;
 }
 
-double IRSensor(IR_SENSOR sensor){
+double IRSensorReading(IR_SENSOR sensor){
   switch(sensor){
   case LEFT_MID: 
   return analogRead(MID_RANGE_LEFT_PIN);
@@ -305,6 +305,7 @@ double IRSensor(IR_SENSOR sensor){
   case RIGHT_LONG:
   return analogRead(LONG_RANGE_RIGHT_PIN);
   }
+  
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -334,14 +335,14 @@ STATE running() {
   #endif
   
   #ifndef NO_READ_IR
-      //IR_reading(LEFT_MID);
-      //IR_reading(LEFT_LONG);
+      IR_reading(LEFT_MID);
+      IR_reading(LEFT_LONG);
       IR_reading(RIGHT_MID);
       IR_reading(RIGHT_LONG);
   #endif
   
   #ifndef NO_HCSR04
-      HC_SR04_range();
+      //HC_SR04_range();
   #endif
   
   #ifndef NO_BATTERY_V_OK
