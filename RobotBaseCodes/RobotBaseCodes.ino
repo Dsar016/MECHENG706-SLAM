@@ -244,23 +244,19 @@ void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct) {
   while(forward){
   if(Left_Mid_Reading < SideDistance && direct == LEFT){
     stop();
-    left_front_motor.writeMicroseconds(1500 - speed_val);
-    right_front_motor.writeMicroseconds(1500 - speed_val);
+    strafe_left();
   }
   else if(Left_Mid_Reading > SideDistance && direct == LEFT){
     stop();
-    left_front_motor.writeMicroseconds(1500 + speed_val);
-    right_front_motor.writeMicroseconds(1500 + speed_val);
+    strafe_right();
   }
   else if(Right_Mid_Reading < SideDistance && direct == RIGHT){
     stop();
-    left_front_motor.writeMicroseconds(1500 + speed_val);
-    right_front_motor.writeMicroseconds(1500 + speed_val);
+    strafe_left();
   }
   else if(Right_Mid_Reading > SideDistance && direct == RIGHT){
     stop();
-    left_front_motor.writeMicroseconds(1500 - speed_val);
-    right_front_motor.writeMicroseconds(1500 - speed_val);
+    strafe_right();
   }
    else{
     forward();
