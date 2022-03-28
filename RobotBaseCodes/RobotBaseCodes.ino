@@ -222,49 +222,44 @@ void AlignEdge(void) {
 }
 
 void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct) {
-  UpdateSensors();
+  UpdateSensors(); // Update the sensor readings
   float Left_Mid_Reading;
   float Right_Mid_Reading;
   float ultrasonic;
 
   Left_Mid_Reading = Average[0];
   Right_Mid_Reading = Average[1];
-
   ultrasonic = Average[4];
+
   //Robot starts moving forward, will add IR Sensor reading
   forward();
-  while(ultrasonic <= ForwardDistance){
-  ultrasonic = Average[4];
-
-  Left_Mid_Reading = Average[0];
-  Right_Mid_Reading = Average[1];
-
   
-  //Robot starts moving forward while IR sensor is checking the distance between the side wall
-  while(forward){
-  if(Left_Mid_Reading < SideDistance && direct == LEFT){
-    stop();
-    strafe_left();
-  }
-  else if(Left_Mid_Reading > SideDistance && direct == LEFT){
-    stop();
-    strafe_right();
-  }
-  else if(Right_Mid_Reading < SideDistance && direct == RIGHT){
-    stop();
-    strafe_left();
-  }
-  else if(Right_Mid_Reading > SideDistance && direct == RIGHT){
-    stop();
-    strafe_right();
-  }
-   else{
-    forward();
-   }
-  }
+  while(ultrasonic >= ForwardDistance){
+    UpdateSensors(); // Update the sensor readings
+    Left_Mid_Reading = Average[0];
+    Right_Mid_Reading = Average[1];
+    ultrasonic = Average[4];
+    SerialCom->println("Left Mid: ");
+    SerialCom->println(Left_Mid_Reading);
+  
+    if(Left_Mid_Reading < (SideDistance+5) && direct == LEFT){
+      strafe_right();
+    }
+    else if(Left_Mid_Reading > (SideDistance-5) && direct == LEFT){
+      strafe_left();
+    }
+    else if(Right_Mid_Reading < (SideDistance+5) && direct == RIGHT){
+      strafe_right();
+    }
+    else if(Right_Mid_Reading > (SideDistance-5) && direct == RIGHT){
+      strafe_left();
+    }
+     else{
+      forward();
+     }
+    }
   stop();
  }
-}
 
 void Shift(DIRECTION direct) {
   // Start motor in correct directions
@@ -434,6 +429,7 @@ STATE running() {
   FollowEdge(15, direct);
   */
   FollowEdge(15, 15, LEFT);
+  disable_motors();
 }
 
 
@@ -619,57 +615,57 @@ void IR_reading(IR_SENSOR sensor)
 {
   int val;
   double temp, est, var;
-  SerialCom->print("IR Sensor:");
+  //SerialCom->print("IR Sensor:");
   switch (sensor)
   {
     case LEFT_MID:  //MID_RANGE_LEFT_PIN
-      SerialCom->println("Mid Left IR Sensor: ");
+      //SerialCom->println("Mid Left IR Sensor: ");
       val = analogRead(MID_RANGE_LEFT_PIN); //Reading raw value from analog port
       temp = Mid_Left_Value * pow(val,Mid_Left_Exponent); //Convert to mm distance based on sensor calibration
       est = KalmanFilter(temp, last_est);
-      SerialCom->print("Unfiltered Value: ");
-      SerialCom->print(temp); 
-      SerialCom->println(" Cm");
-      SerialCom->print("Filtered Value: ");
-      SerialCom->print(est); 
-      SerialCom->println(" Cm");
+      //SerialCom->print("Unfiltered Value: ");
+      //SerialCom->print(temp); 
+      //SerialCom->println(" Cm");
+      //SerialCom->print("Filtered Value: ");
+      //SerialCom->print(est); 
+      //SerialCom->println(" Cm");
       break;
     case LEFT_LONG: //LONG_RANGE_LEFT_PIN
-      SerialCom->println("Long Left IR Sensor: ");
+      //SerialCom->println("Long Left IR Sensor: ");
       val = analogRead(LONG_RANGE_LEFT_PIN); //Reading raw value from analog port
       temp = Long_Left_Value * pow(val,Long_Left_Exponent); //Convert to mm distance based on sensor calibration
       est = KalmanFilter(temp, last_est);
-      SerialCom->print("Unfiltered Value: ");
-      SerialCom->print(temp); 
-      SerialCom->println(" Cm");
-      SerialCom->print("Filtered Value: ");
-      SerialCom->print(est); 
-      SerialCom->println(" Cm");
+      //SerialCom->print("Unfiltered Value: ");
+      //SerialCom->print(temp); 
+      //SerialCom->println(" Cm");
+      //SerialCom->print("Filtered Value: ");
+      //SerialCom->print(est); 
+      //SerialCom->println(" Cm");
       break;
     case RIGHT_LONG: //LONG_RANGE_RIGHT_PIN
-      SerialCom->print("Long Right IR Sensor: ");
+      //SerialCom->print("Long Right IR Sensor: ");
       val = analogRead(LONG_RANGE_RIGHT_PIN); //Reading raw value from analog port
-      SerialCom->println(val);
+      //SerialCom->println(val);
       temp = Long_Right_Value * pow(val,Long_Right_Exponent); //Convert to mm distance based on sensor calibration
       est = KalmanFilter(temp, last_est);
-      SerialCom->print("Unfiltered Value: ");
-      SerialCom->print(temp); 
-      SerialCom->println(" Cm");
-      SerialCom->print("Filtered Value: ");
-      SerialCom->print(est); 
-      SerialCom->println(" Cm");
+      //SerialCom->print("Unfiltered Value: ");
+      //SerialCom->print(temp); 
+      //SerialCom->println(" Cm");
+      //SerialCom->print("Filtered Value: ");
+      //SerialCom->print(est); 
+      //SerialCom->println(" Cm");
       break;
      case RIGHT_MID: //MID_RANGE_RIGHT_PIN
-      SerialCom->println("Mid Right IR Sensor: ");
+      //SerialCom->println("Mid Right IR Sensor: ");
       val = analogRead(MID_RANGE_RIGHT_PIN); //Reading raw value from analog port
       temp = Mid_Right_Value * pow(val,Mid_Right_Exponent); //Convert to mm distance based on sensor calibration
       est = KalmanFilter(temp, last_est);
-      SerialCom->print("Unfiltered Value: ");
-      SerialCom->print(temp); 
-      SerialCom->println(" Cm");
-      SerialCom->print("Filtered Value: ");
-      SerialCom->print(est); 
-      SerialCom->println(" Cm");
+      //SerialCom->print("Unfiltered Value: ");
+      //SerialCom->print(temp); 
+      //SerialCom->println(" Cm");
+      //SerialCom->print("Filtered Value: ");
+      //SerialCom->print(est); 
+      //SerialCom->println(" Cm");
       break;
   }
 }
