@@ -189,7 +189,7 @@ void RotateDeg(float deg = 0.0){
   SerialCom->println("stop");
 }
 
-ISR(TIMER2_COMPA_vect) {
+ISR(TIMER2_COMPA_vect) { //increment ms count
   TCNT2 = 0;
   msCount2++;
 }
@@ -214,7 +214,7 @@ void LocateCorner(void) {
 
   //rotate car, populate measurement array and find min distance to wall
   for(int i = 0; i < 72; i++){
-    RotateDeg(i*(360/n));
+    RotateDeg((360/n));
     distance[i] = HC_SR04_range();
     minIndex = distance[i] < distance[minIndex] ? minIndex : i;
   }
