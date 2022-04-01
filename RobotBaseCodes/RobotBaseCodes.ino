@@ -217,8 +217,20 @@ void MoveToCorner(float distance) {
   stop();
 }
 
-void AlignEdge(void) {
+void AlignEdge(float Distance) {
+  cw();
   
+  for (int i = 0; i < 20; i++) {
+    UpdateSensors(); 
+  }
+
+  float ultrasonic;
+  ultrasonic = Average[4];
+  while(ultrasonic > Distance) {
+    UpdateSensors();
+    ultrasonic = Average[4];
+  }
+  stop();
 }
 
 void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct, bool dist) {
@@ -298,8 +310,20 @@ void Rotate180(void) {
   stop();
 }
 
-double FindCloseEdge(void) {
-  
+float FindCloseEdge(void) {
+  for (int i = 0; i < 20; i++) {
+    UpdateSensors(); 
+  }
+
+  // Long range only
+  float Left_Reading = Average[2];
+  float Right_Reading = Average[3];
+
+  if (Left_Reading < Right_Reading) {
+    return Left_Reading;
+  } else {
+    return - Right_Reading;
+  }
 }
 
 ////////////////// SENSOR FUNCTIONS /////////////////////////////////
@@ -446,7 +470,7 @@ STATE running() {
 
   FollowEdge(15, direct);
   */
-  FollowEdge(15, 60, RIGHT, false);
+  AlignEdge(10);
   disable_motors();
 }
 
