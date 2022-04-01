@@ -234,14 +234,21 @@ void AlignEdge(float Distance) {
 }
 
 void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct, bool dist) {
-  UpdateSensors(); // Update the sensor readings
+  
+  for (int i = 0; i < 20; i++) {
+    UpdateSensors(); 
+  } // Update the sensor readings
+  
   float tilt = 15;
   float Left_Reading;
   float Right_Reading;
   float ultrasonic;
 
-  float tiltIntegral = 0.0;
-  float tiltError = 0;
+  float tiltDerivative = 1;
+  float Error = 0;
+  float previousError = 0;
+  float rate = 0;
+  float ControllerEffort;
   
   // dist is which sensor to use (true) mid or (false) long
   if (dist == true) {
@@ -268,23 +275,31 @@ void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct, bool di
     }
     
     ultrasonic = Average[4];
-
+    
     // Rear wheel drive
     left_rear_motor.writeMicroseconds(1500 + speed_val);
     right_rear_motor.writeMicroseconds(1500 - speed_val);
 
     if (direct == LEFT) {
       // Front wheel steer
-      tiltError = tiltError + Left_Reading - SideDistance;
-      left_front_motor.writeMicroseconds(1500 + speed_val - tilt*(Left_Reading - SideDistance));
-      right_front_motor.writeMicroseconds(1500 - speed_val - tilt*(Left_Reading - SideDistance)); 
+      Error = Left_Reading - SideDistance;
+      rate = Error - previousError;
+      ControllerEffort = (tilt * Error) + (tiltDerivative * rate);
+      left_front_motor.writeMicroseconds(1500 + speed_val - ControllerEffort);
+      right_front_motor.writeMicroseconds(1500 - speed_val - ControllerEffort); 
+
+      previousError = Error;
     }
 
     if (direct == RIGHT) {
       // Front wheel steer
-      tiltError = tiltError - Right_Reading + SideDistance;
-      left_front_motor.writeMicroseconds(1500 + speed_val - tilt*(-Right_Reading + SideDistance));
-      right_front_motor.writeMicroseconds(1500 - speed_val - tilt*(-Right_Reading + SideDistance));
+      Error = Left_Reading - SideDistance;
+      rate = Error - previousError;
+      ControllerEffort = (tilt * Error) + (tiltDerivative * rate);      
+      left_front_motor.writeMicroseconds(1500 + speed_val - ControllerEffort);
+      right_front_motor.writeMicroseconds(1500 - speed_val - ControllerEffort);
+
+      previousError = Error;
     }
     
     }
@@ -439,38 +454,48 @@ STATE running() {
   #endif
   }
 
-  // PROTOTYPE 1 //////////////////////
-  /*
+  /*// PROTOTYPE 1 //////////////////////
+  
   double dist;
   
-  LocateCorner();
-  MoveToCorner();
-  AlignEdge();
-  FollowEdge(15, LEFT);
+  //LocateCorner();
+  //MoveToCorner();
+  //AlignEdge();
+  FollowEdge(15, 15, LEFT, false);
+  delay(1000);
   DIRECTION direct = RIGHT;
   DIRECTION follow_edge;
+  float whileCheck = 20;
 
-  while(0) { // distance read in direct direction < 15
+  while(whileCheck > 15) { // distance read in direct direction < 15
     Shift(direct);
+    delay(1000);
     Rotate180();
+    delay(1000);
     dist = FindCloseEdge();
     if(dist > 0) {
       follow_edge = LEFT;
     } else {
       follow_edge = RIGHT;
     }
-    FollowEdge(abs(dist), follow_edge);
+    FollowEdge(15, abs(dist), follow_edge, false);
+    delay(1000);
     
     if(direct = LEFT) {
       direct = RIGHT;
     } else {
       direct = LEFT;
     }
-  }
-
-  FollowEdge(15, direct);
-  */
-  AlignEdge(10);
+    if (direct == LEFT) {
+      whileCheck = Average[2];
+    } else {
+      whileCheck = Average[3];
+    }
+  } */
+  
+  DIRECTION direct = RIGHT;
+  FollowEdge(15, 15, direct, false);
+  
   disable_motors();
 }
 
