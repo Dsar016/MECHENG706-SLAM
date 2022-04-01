@@ -229,11 +229,22 @@ void LocateCorner(void) {
   };
 
   //rotate car, populate measurement array and find min distance to wall
-  for(int i = 0; i < 72; i++){
+  for(int i = 0; i < n; i++){
     RotateDeg((360/n));
     distance[i] = HC_SR04_range();
     minIndex = distance[i] < distance[minIndex] ? minIndex : i;
   }
+
+  for(int i = 0; i < n; i++){
+    SerialCom->print(distance[i]); 
+    SerialCom->print(", "); 
+  }
+
+  SerialCom->println();
+  SerialCom->print("Min Dist: "); 
+  SerialCom->println(distance[minIndex]); 
+
+  
 
  /* //rotate to minimum dist to wall
   RotateDeg(minIndex*(360/n)); 
@@ -472,8 +483,12 @@ STATE running() {
 
   FollowEdge(15, direct);
   */
-  FollowEdge(15, 15, RIGHT);
-  disable_motors();
+  /*FollowEdge(15, 15, RIGHT);*/
+
+
+  LocateCorner();
+  delay(1000000000);
+  //disable_motors();
 }
 
 
