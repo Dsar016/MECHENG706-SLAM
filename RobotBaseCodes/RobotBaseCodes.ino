@@ -21,6 +21,7 @@
 */
 #include <Servo.h>  //Need for Servo pulse output
 
+
 // Wireless Serial ////////////////////////////////////////////////////////
 // To print to wireless module use BluetoothSerial.print(...);
 #include <SoftwareSerial.h>
@@ -34,7 +35,7 @@ SoftwareSerial BluetoothSerial(BLUETOOTH_RX, BLUETOOTH_TX);
 //#define NO_READ_GYRO  //Uncomment of GYRO is not attached.
 //#define NO_HCSR04 //Uncomment of HC-SR04 ultrasonic ranging sensor is not attached.
 //#define NO_READ_IR //Uncomment if IR Sensors not attached
-//#define NO_BATTERY_V_OK //Uncomment of BATTERY_V_OK if you do not care about battery damage.
+#define NO_BATTERY_V_OK //Uncomment of BATTERY_V_OK if you do not care about battery damage.
 
 //State machine states
 enum STATE {
@@ -53,6 +54,12 @@ enum DIRECTION {
   CW
 };
 
+// Moving Average
+double CurrentIR[5];
+double Average[5];
+double oldIR[5][10];
+int timer2i = 0;
+
 //Refer to Shield Pinouts.jpg for pin locations
 
 //Default motor control pins
@@ -68,7 +75,7 @@ const int ECHO_PIN = 49;
 
 //IR Range Sensor Pins
 const int MID_RANGE_RIGHT_PIN = A14;  
-const int MID_RANGE_LEFT_PIN = A12;
+const int MID_RANGE_LEFT_PIN = A11;
 const int LONG_RANGE_RIGHT_PIN = A15; 
 const int LONG_RANGE_LEFT_PIN = A13;
 
@@ -81,12 +88,20 @@ enum IR_SENSOR {
 };
 
 //Define constants for IR sensor Calculations, excel sheet with calibrations are available on our google drive
-const int Mid_Left_Exponent = 1 / 1.001;
-const int Mid_Left_Power = pow(2362.6, Mid_Left_Exponent);
-const int Long_Left_Exponent = 1 / 0.901;
-const int Long_Left_Power = pow(3720.4, Long_Left_Exponent);
-const int Mid_Right_Exponent = 1 / 0.695;
-const int Mid_Right_Power = pow(2148.8, Mid_Right_Exponent);
+const double Mid_Left_Exponent = -1.024;
+const double Mid_Left_Value = 2567.6;
+const double Long_Left_Exponent = -1.073;
+const double Long_Left_Value = 7402.8;
+const double Mid_Right_Exponent = -0.976;
+const double Mid_Right_Value = 1978.5;
+const double Long_Right_Exponent = -1.151;
+const double Long_Right_Value = 12293;
+
+double last_est = 15;
+double last_var = 999;
+double process_noise = 10; //High if the process itself has lots of noise
+double sensor_noise = 1; //High if the sensor has lots of noise
+//Note: these noises are relative to each other, so if the process is stable, the sensor noise value will be larger due to this
 
 //Long Right Sensor uses a logarithmic equation instead of a power equation, so the constants are defined differently, they need to be calculated every loop, as the changing reading is right in the middle of the equation
 
@@ -117,13 +132,6 @@ void setup(void)
   pinMode(TRIG_PIN, OUTPUT);
   digitalWrite(TRIG_PIN, LOW);
 
-  cli();
-  OCR2A = 16000l;
-  TCCR2A |= (1 << WGM11); // CTC mode
-  TCCR2B |= (1 << CS10); // no prescaler
-  TIMSK2 |= (1 << OCIE1A);
-  sei();
-
   // Setup the Serial port and pointer, the pointer allows switching the debug info through the USB port(Serial) or Bluetooth port(Serial1) with ease.
   SerialCom = &Serial;
   SerialCom->begin(115200);
@@ -148,7 +156,7 @@ void loop(void) //main loop
     case STOPPED: //Stop of Lipo Battery voltage is too low, to protect Battery
       machine_state =  stopped();
       break;
-  };
+  }
 }
 
 ///////////////////// PROTOTYPE 1 FUNCTIONS ///////////////////////
@@ -180,10 +188,6 @@ void RotateDeg(float degrees = 0){
   rSpeedZ = 0;
 }
 
-ISR(TIMER2_COMPA_vect) {
-  TCNT2 = 0;
-  msCount2++;
-}
 
 void LocateCorner(void) {
   
@@ -217,18 +221,45 @@ void AlignEdge(void) {
   
 }
 
-void FollowEdge(int distance, DIRECTION direct) {
-  distance = 15;
-  //Robot starts moving forward, will add IR Sensor reading and direct later, depending on controller
+void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct) {
+  UpdateSensors(); // Update the sensor readings
+  int tilt = 10;
+  float Left_Mid_Reading;
+  float Right_Mid_Reading;
+  float ultrasonic;
+
+  Left_Mid_Reading = Average[0];
+  Right_Mid_Reading = Average[1];
+  ultrasonic = Average[4];
+
+  //Robot starts moving forward, will add IR Sensor reading
   forward();
-  //Robot will continue to drive forward until Ultra Sonic sensors detects 15 cm
-  if(HC_SR04_range <= distance){
-    stop();
-  }
-   else{
-    forward();
-   }
-}
+  
+  while(ultrasonic >= ForwardDistance){
+    UpdateSensors(); // Update the sensor readings
+    Left_Mid_Reading = Average[0];
+    Right_Mid_Reading = Average[1];
+    ultrasonic = Average[4];
+
+    // Rear wheel drive
+    left_rear_motor.writeMicroseconds(1500 + speed_val);
+    right_rear_motor.writeMicroseconds(1500 - speed_val);
+
+    if (direct == LEFT) {
+      // Front wheel steer
+      left_front_motor.writeMicroseconds(1600 - tilt*(Left_Mid_Reading - SideDistance));
+      right_front_motor.writeMicroseconds(1400 - tilt*(Left_Mid_Reading - SideDistance)); 
+    }
+
+    if (direct == RIGHT) {
+      // Front wheel steer
+      left_front_motor.writeMicroseconds(1600 - tilt*(-Right_Mid_Reading + SideDistance));
+      right_front_motor.writeMicroseconds(1400 - tilt*(-Right_Mid_Reading + SideDistance)); 
+    }
+    
+    }
+  stop();
+ }
 
 void Shift(DIRECTION direct) {
   // Start motor in correct directions
@@ -254,8 +285,76 @@ double FindCloseEdge(void) {
 }
 
 ////////////////// SENSOR FUNCTIONS /////////////////////////////////
+double KalmanFilter(double rawdata, double prev_est){
+  double a_priori_est, a_post_est, a_priori_var, a_post_var, kalman_gain;
 
+  a_priori_est = prev_est;  
+  a_priori_var = last_var + process_noise; 
 
+  kalman_gain = a_priori_var/(a_priori_var+sensor_noise);
+  a_post_est = a_priori_est + kalman_gain*(rawdata-a_priori_est);
+  a_post_var = (1- kalman_gain)*a_priori_var;
+  last_var = a_post_var;
+  return a_post_est;
+}
+
+double IRSensorReading(IR_SENSOR sensor){
+  int val;
+  double temp, est, var;
+  
+  switch(sensor){
+  case LEFT_MID: 
+      val = analogRead(MID_RANGE_LEFT_PIN); //Reading raw value from analog port
+      temp = Mid_Left_Value * pow(val,Mid_Left_Exponent); //Convert to mm distance based on sensor calibration
+      est = KalmanFilter(temp, last_est);
+      return est;
+  case LEFT_LONG:
+      val = analogRead(LONG_RANGE_LEFT_PIN); //Reading raw value from analog port
+      temp = Long_Left_Value * pow(val,Long_Left_Exponent); //Convert to mm distance based on sensor calibration
+      est = KalmanFilter(temp, last_est); 
+      return est;
+  case RIGHT_MID:
+      val = analogRead(MID_RANGE_RIGHT_PIN); //Reading raw value from analog port
+      temp = Mid_Right_Value * pow(val,Mid_Right_Exponent); //Convert to mm distance based on sensor calibration
+      est = KalmanFilter(temp, last_est);
+      return est;
+  case RIGHT_LONG:
+      val = analogRead(LONG_RANGE_RIGHT_PIN); //Reading raw value from analog port
+      temp = Long_Right_Value * pow(val,Long_Right_Exponent); //Convert to mm distance based on sensor calibration
+      est = KalmanFilter(temp, last_est);
+      return est;
+  }
+}
+
+void UpdateSensors() {
+  // Take and compare new IR sensor readings with previous sensor readings
+  
+  // Find current sensor readings
+  CurrentIR[0] = IRSensorReading(LEFT_MID);
+  CurrentIR[1] = IRSensorReading(RIGHT_MID);
+  CurrentIR[2] = IRSensorReading(LEFT_LONG);
+  CurrentIR[3] = IRSensorReading(RIGHT_LONG);
+  CurrentIR[4] = HC_SR04_range();
+  
+  double total;
+  // Find average reading from past 10 readings
+  for (int n = 0; n < 5; n++) {
+    total = 0;
+    for (int m = 0; m < 10; m++) {
+      total = oldIR[n][m] + total;
+    }
+    Average[n] = total/10;
+  }
+  
+  // Add current reading to old readings
+  oldIR[0][timer2i] = CurrentIR[0];
+  oldIR[1][timer2i] = CurrentIR[1];
+  oldIR[2][timer2i] = CurrentIR[2];
+  oldIR[3][timer2i] = CurrentIR[3];
+  oldIR[4][timer2i] = CurrentIR[4];
+  
+  timer2i = (timer2i+1)%10;
+}
 ///////////////////////////////////////////////////////////////////
 
 STATE initialising() {
@@ -279,7 +378,7 @@ STATE running() {
     speed_change_smooth();
 
   #ifndef NO_READ_GYRO
-      GYRO_reading();
+      //GYRO_reading();
   #endif
   
   #ifndef NO_READ_IR
@@ -329,11 +428,8 @@ STATE running() {
 
   FollowEdge(15, direct);
   */
-  MoveToCorner(20);
-  delay(10000);
-  // END OF PROTOTYPE 1 ///////////////
-
-  return RUNNING;
+  FollowEdge(15, 15, RIGHT);
+  disable_motors();
 }
 
 
@@ -473,8 +569,8 @@ float HC_SR04_range()
     t2 = micros();
     pulse_width = t2 - t1;
     if ( pulse_width > (MAX_DIST + 1000)) {
-      SerialCom->println("HC-SR04: NOT found");
-      return;
+      //SerialCom->println("HC-SR04: NOT found");
+      return float(Average[4]);
     }
   }
 
@@ -487,8 +583,8 @@ float HC_SR04_range()
     t2 = micros();
     pulse_width = t2 - t1;
     if ( pulse_width > (MAX_DIST + 1000) ) {
-      SerialCom->println("HC-SR04: Out of range");
-      return;
+      //SerialCom->println("HC-SR04: Out of range");
+      return float(Average[4]);
     }
   }
 
@@ -503,11 +599,11 @@ float HC_SR04_range()
 
   // Print out results
   if ( pulse_width > MAX_DIST ) {
-    SerialCom->println("HC-SR04: Out of range");
+    //SerialCom->println("HC-SR04: Out of range");
   } else {
-    SerialCom->print("HC-SR04:");
-    SerialCom->print(cm);
-    SerialCom->println("cm");
+    //SerialCom->print("HC-SR04:");
+    //SerialCom->print(cm);
+    //SerialCom->println("cm");
   }
 
   return cm;
@@ -517,29 +613,59 @@ float HC_SR04_range()
 #ifndef NO_READ_IR
 void IR_reading(IR_SENSOR sensor)
 {
-  SerialCom->print("IR Sensor:");
+  int val;
+  double temp, est, var;
+  //SerialCom->print("IR Sensor:");
   switch (sensor)
   {
-    case LEFT_MID: 
-      SerialCom->print("Mid Left IR Sensor: ");
-      SerialCom->print((Mid_Left_Power) / (pow(analogRead(MID_RANGE_LEFT_PIN),Mid_Left_Exponent))); //MID_RANGE_LEFT_PIN
-      SerialCom->println(" Cm");
+    case LEFT_MID:  //MID_RANGE_LEFT_PIN
+      //SerialCom->println("Mid Left IR Sensor: ");
+      val = analogRead(MID_RANGE_LEFT_PIN); //Reading raw value from analog port
+      temp = Mid_Left_Value * pow(val,Mid_Left_Exponent); //Convert to mm distance based on sensor calibration
+      est = KalmanFilter(temp, last_est);
+      //SerialCom->print("Unfiltered Value: ");
+      //SerialCom->print(temp); 
+      //SerialCom->println(" Cm");
+      //SerialCom->print("Filtered Value: ");
+      //SerialCom->print(est); 
+      //SerialCom->println(" Cm");
       break;
-    case LEFT_LONG:
-      SerialCom->print("Long Left IR Sensor: ");
-      SerialCom->print(Long_Left_Power) / (pow(analogRead(LONG_RANGE_LEFT_PIN),Long_Left_Exponent)); //LONG_RANGE_LEFT_PIN
-      SerialCom->println(" Cm");
+    case LEFT_LONG: //LONG_RANGE_LEFT_PIN
+      //SerialCom->println("Long Left IR Sensor: ");
+      val = analogRead(LONG_RANGE_LEFT_PIN); //Reading raw value from analog port
+      temp = Long_Left_Value * pow(val,Long_Left_Exponent); //Convert to mm distance based on sensor calibration
+      est = KalmanFilter(temp, last_est);
+      //SerialCom->print("Unfiltered Value: ");
+      //SerialCom->print(temp); 
+      //SerialCom->println(" Cm");
+      //SerialCom->print("Filtered Value: ");
+      //SerialCom->print(est); 
+      //SerialCom->println(" Cm");
       break;
-    case RIGHT_LONG:
-      SerialCom->print("Long Right IR Sensor: ");
-      //Must be calculated in the switch statement, as the analog read is right in the middle of the equation, so its always changing
-      SerialCom->print(-(log(analogRead(LONG_RANGE_RIGHT_PIN) / 379.76)/0.056)); //LONG_RANGE_RIGHT_PIN
-      SerialCom->println(" Cm");
+    case RIGHT_LONG: //LONG_RANGE_RIGHT_PIN
+      //SerialCom->print("Long Right IR Sensor: ");
+      val = analogRead(LONG_RANGE_RIGHT_PIN); //Reading raw value from analog port
+      //SerialCom->println(val);
+      temp = Long_Right_Value * pow(val,Long_Right_Exponent); //Convert to mm distance based on sensor calibration
+      est = KalmanFilter(temp, last_est);
+      //SerialCom->print("Unfiltered Value: ");
+      //SerialCom->print(temp); 
+      //SerialCom->println(" Cm");
+      //SerialCom->print("Filtered Value: ");
+      //SerialCom->print(est); 
+      //SerialCom->println(" Cm");
       break;
-     case RIGHT_MID:
-      SerialCom->print("Mid Right IR Sensor: ");
-      SerialCom->print((Mid_Right_Power) / (pow(analogRead(MID_RANGE_RIGHT_PIN),Mid_Right_Exponent))); //MID_RANGE_RIGHT_PIN
-      SerialCom->println(" Cm");
+     case RIGHT_MID: //MID_RANGE_RIGHT_PIN
+      //SerialCom->println("Mid Right IR Sensor: ");
+      val = analogRead(MID_RANGE_RIGHT_PIN); //Reading raw value from analog port
+      temp = Mid_Right_Value * pow(val,Mid_Right_Exponent); //Convert to mm distance based on sensor calibration
+      est = KalmanFilter(temp, last_est);
+      //SerialCom->print("Unfiltered Value: ");
+      //SerialCom->print(temp); 
+      //SerialCom->println(" Cm");
+      //SerialCom->print("Filtered Value: ");
+      //SerialCom->print(est); 
+      //SerialCom->println(" Cm");
       break;
   }
 }
