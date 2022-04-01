@@ -35,7 +35,7 @@ SoftwareSerial BluetoothSerial(BLUETOOTH_RX, BLUETOOTH_TX);
 //#define NO_READ_GYRO  //Uncomment of GYRO is not attached.
 //#define NO_HCSR04 //Uncomment of HC-SR04 ultrasonic ranging sensor is not attached.
 //#define NO_READ_IR //Uncomment if IR Sensors not attached
-//#define NO_BATTERY_V_OK //Uncomment of BATTERY_V_OK if you do not care about battery damage.
+#define NO_BATTERY_V_OK //Uncomment of BATTERY_V_OK if you do not care about battery damage.
 
 //State machine states
 enum STATE {
@@ -223,6 +223,7 @@ void AlignEdge(void) {
 
 void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct) {
   UpdateSensors(); // Update the sensor readings
+  int tilt = 10;
   float Left_Mid_Reading;
   float Right_Mid_Reading;
   float ultrasonic;
@@ -239,24 +240,23 @@ void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct) {
     Left_Mid_Reading = Average[0];
     Right_Mid_Reading = Average[1];
     ultrasonic = Average[4];
-    SerialCom->println("Left Mid: ");
-    SerialCom->println(Left_Mid_Reading);
-  
-    if(Left_Mid_Reading < (SideDistance+5) && direct == LEFT){
-      strafe_right();
+
+    // Rear wheel drive
+    left_rear_motor.writeMicroseconds(1500 + speed_val);
+    right_rear_motor.writeMicroseconds(1500 - speed_val);
+
+    if (direct == LEFT) {
+      // Front wheel steer
+      left_front_motor.writeMicroseconds(1600 - tilt*(Left_Mid_Reading - SideDistance));
+      right_front_motor.writeMicroseconds(1400 - tilt*(Left_Mid_Reading - SideDistance)); 
     }
-    else if(Left_Mid_Reading > (SideDistance-5) && direct == LEFT){
-      strafe_left();
+
+    if (direct == RIGHT) {
+      // Front wheel steer
+      left_front_motor.writeMicroseconds(1600 - tilt*(-Right_Mid_Reading + SideDistance));
+      right_front_motor.writeMicroseconds(1400 - tilt*(-Right_Mid_Reading + SideDistance)); 
     }
-    else if(Right_Mid_Reading < (SideDistance+5) && direct == RIGHT){
-      strafe_right();
-    }
-    else if(Right_Mid_Reading > (SideDistance-5) && direct == RIGHT){
-      strafe_left();
-    }
-     else{
-      forward();
-     }
+    
     }
   stop();
  }
@@ -428,7 +428,7 @@ STATE running() {
 
   FollowEdge(15, direct);
   */
-  FollowEdge(15, 15, LEFT);
+  FollowEdge(15, 15, RIGHT);
   disable_motors();
 }
 
