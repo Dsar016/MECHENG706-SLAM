@@ -217,19 +217,41 @@ void MoveToCorner(float distance) {
   stop();
 }
 
-void AlignEdge(void) {
+void AlignEdge(float Distance) {
+  cw();
   
+  for (int i = 0; i < 20; i++) {
+    UpdateSensors(); 
+  }
+
+  float ultrasonic;
+  ultrasonic = Average[4];
+  while(ultrasonic > Distance) {
+    UpdateSensors();
+    ultrasonic = Average[4];
+  }
+  stop();
 }
 
-void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct) {
+void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct, bool dist) {
   UpdateSensors(); // Update the sensor readings
-  int tilt = 10;
-  float Left_Mid_Reading;
-  float Right_Mid_Reading;
+  float tilt = 15;
+  float Left_Reading;
+  float Right_Reading;
   float ultrasonic;
 
-  Left_Mid_Reading = Average[0];
-  Right_Mid_Reading = Average[1];
+  float tiltIntegral = 0.0;
+  float tiltError = 0;
+  
+  // dist is which sensor to use (true) mid or (false) long
+  if (dist == true) {
+    Left_Reading = Average[0];
+    Right_Reading = Average[1];
+  } else {
+    Left_Reading = Average[2];
+    Right_Reading = Average[3];
+  }
+  
   ultrasonic = Average[4];
 
   //Robot starts moving forward, will add IR Sensor reading
@@ -237,8 +259,14 @@ void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct) {
   
   while(ultrasonic >= ForwardDistance){
     UpdateSensors(); // Update the sensor readings
-    Left_Mid_Reading = Average[0];
-    Right_Mid_Reading = Average[1];
+    if (dist) {
+      Left_Reading = Average[0];
+      Right_Reading = Average[1];
+    } else {
+      Left_Reading = Average[2];
+      Right_Reading = Average[3];
+    }
+    
     ultrasonic = Average[4];
 
     // Rear wheel drive
@@ -247,14 +275,16 @@ void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct) {
 
     if (direct == LEFT) {
       // Front wheel steer
-      left_front_motor.writeMicroseconds(1600 - tilt*(Left_Mid_Reading - SideDistance));
-      right_front_motor.writeMicroseconds(1400 - tilt*(Left_Mid_Reading - SideDistance)); 
+      tiltError = tiltError + Left_Reading - SideDistance;
+      left_front_motor.writeMicroseconds(1500 + speed_val - tilt*(Left_Reading - SideDistance));
+      right_front_motor.writeMicroseconds(1500 - speed_val - tilt*(Left_Reading - SideDistance)); 
     }
 
     if (direct == RIGHT) {
       // Front wheel steer
-      left_front_motor.writeMicroseconds(1600 - tilt*(-Right_Mid_Reading + SideDistance));
-      right_front_motor.writeMicroseconds(1400 - tilt*(-Right_Mid_Reading + SideDistance)); 
+      tiltError = tiltError - Right_Reading + SideDistance;
+      left_front_motor.writeMicroseconds(1500 + speed_val - tilt*(-Right_Reading + SideDistance));
+      right_front_motor.writeMicroseconds(1500 - speed_val - tilt*(-Right_Reading + SideDistance));
     }
     
     }
@@ -280,8 +310,20 @@ void Rotate180(void) {
   stop();
 }
 
-double FindCloseEdge(void) {
-  
+float FindCloseEdge(void) {
+  for (int i = 0; i < 20; i++) {
+    UpdateSensors(); 
+  }
+
+  // Long range only
+  float Left_Reading = Average[2];
+  float Right_Reading = Average[3];
+
+  if (Left_Reading < Right_Reading) {
+    return Left_Reading;
+  } else {
+    return - Right_Reading;
+  }
 }
 
 ////////////////// SENSOR FUNCTIONS /////////////////////////////////
@@ -428,7 +470,7 @@ STATE running() {
 
   FollowEdge(15, direct);
   */
-  FollowEdge(15, 15, RIGHT);
+  AlignEdge(10);
   disable_motors();
 }
 
