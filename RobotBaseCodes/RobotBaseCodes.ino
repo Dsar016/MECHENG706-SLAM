@@ -223,7 +223,7 @@ void AlignEdge(void) {
 
 void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct) {
   UpdateSensors(); // Update the sensor readings
-  int tilt = 100;
+  int tilt = 10;
   float Left_Mid_Reading;
   float Right_Mid_Reading;
   float ultrasonic;
@@ -240,38 +240,23 @@ void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct) {
     Left_Mid_Reading = Average[0];
     Right_Mid_Reading = Average[1];
     ultrasonic = Average[4];
-  
-    if(Left_Mid_Reading < (SideDistance+5) && direct == LEFT){
-      // Go right
-      left_front_motor.writeMicroseconds(1500 + tilt);
-      left_rear_motor.writeMicroseconds(1500 + tilt);
-      right_rear_motor.writeMicroseconds(1500 - tilt);
-      right_front_motor.writeMicroseconds(1500);
+
+    // Rear wheel drive
+    left_rear_motor.writeMicroseconds(1500 + speed_val);
+    right_rear_motor.writeMicroseconds(1500 - speed_val);
+
+    if (direct == LEFT) {
+      // Front wheel steer
+      left_front_motor.writeMicroseconds(1600 - tilt*(Left_Mid_Reading - SideDistance));
+      right_front_motor.writeMicroseconds(1400 - tilt*(Left_Mid_Reading - SideDistance)); 
     }
-    else if(Left_Mid_Reading > (SideDistance-5) && direct == LEFT){
-      // Go left
-      left_front_motor.writeMicroseconds(1500);
-      left_rear_motor.writeMicroseconds(1500 + tilt);
-      right_rear_motor.writeMicroseconds(1500 - tilt);
-      right_front_motor.writeMicroseconds(1500 - tilt);
+
+    if (direct == RIGHT) {
+      // Front wheel steer
+      left_front_motor.writeMicroseconds(1600 - tilt*(-Right_Mid_Reading + SideDistance));
+      right_front_motor.writeMicroseconds(1400 - tilt*(-Right_Mid_Reading + SideDistance)); 
     }
-    else if(Right_Mid_Reading < (SideDistance+5) && direct == RIGHT){
-      // Go right
-      left_front_motor.writeMicroseconds(1500);
-      left_rear_motor.writeMicroseconds(1500 + tilt);
-      right_rear_motor.writeMicroseconds(1500 - tilt);
-      right_front_motor.writeMicroseconds(1500 - tilt);
-    }
-    else if(Right_Mid_Reading > (SideDistance-5) && direct == RIGHT){
-      // Go left
-      left_front_motor.writeMicroseconds(1500 + tilt);
-      left_rear_motor.writeMicroseconds(1500 + tilt);
-      right_rear_motor.writeMicroseconds(1500 - tilt);
-      right_front_motor.writeMicroseconds(1500);
-    }
-     else{
-      forward();
-     }
+    
     }
   stop();
  }
@@ -443,7 +428,7 @@ STATE running() {
 
   FollowEdge(15, direct);
   */
-  FollowEdge(15, 15, LEFT);
+  FollowEdge(15, 15, RIGHT);
   disable_motors();
 }
 
