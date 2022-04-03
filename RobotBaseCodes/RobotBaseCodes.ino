@@ -103,7 +103,10 @@ double process_noise = 10; //High if the process itself has lots of noise
 double sensor_noise = 1; //High if the sensor has lots of noise
 //Note: these noises are relative to each other, so if the process is stable, the sensor noise value will be larger due to this
 
-//Long Right Sensor uses a logarithmic equation instead of a power equation, so the constants are defined differently, they need to be calculated every loop, as the changing reading is right in the middle of the equation
+//Map array, which is initially set to 0,0. The 0,0 point will be taken after the robot has found the corner. it will be a nx2 array. 
+const int ROW_MAX = 1000;
+const int COL_MAX = 2;
+int Map[ROW_MAX][COL_MAX];
 
 //Gyro Analog Pin
 const int GYRO_PIN = A3;
@@ -396,6 +399,11 @@ void UpdateSensors() {
   oldIR[4][timer2i] = CurrentIR[4];
   
   timer2i = (timer2i+1)%10;
+}
+
+void SLAM(){
+  //This function will be used to create a map and port it externally
+  
 }
 ///////////////////////////////////////////////////////////////////
 
