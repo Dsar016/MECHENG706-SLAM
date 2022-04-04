@@ -106,7 +106,11 @@ double sensor_noise = 1; //High if the sensor has lots of noise
 //Map array, which is initially set to 0,0. The 0,0 point will be taken after the robot has found the corner. it will be a nx2 array. 
 const int ROW_MAX = 1000;
 const int COL_MAX = 2;
-int Map[ROW_MAX][COL_MAX];
+int Map[ROW_MAX][COL_MAX]; //First column is x position, second column is y position. X position will be along the long end of the table
+int MapRowCounter = 0;
+int PastMapRowCounter = 0;
+float IRReadingSLAM, PastIRReadingSLAM, UltrasonicSLAM, PastUltrasonicSLAM;
+
 
 //Gyro Analog Pin
 const int GYRO_PIN = A3;
@@ -401,8 +405,59 @@ void UpdateSensors() {
   timer2i = (timer2i+1)%10;
 }
 
-void SLAM(){
+void SLAM(DIRECTION direct){
+  
+  float IRDifference, UltrasonicDifference;
+  //Update Sensor readings
+  for (int i = 0; i < 20; i++) {
+    UpdateSensors(); 
+  }
+    
   //This function will be used to create a map and port it externally
+  if (MapRowCounter == 0){//The SLAM function should only be run once the robot is in the corner, so it can be initialised as the 0,0 position
+    Map[MapRowCounter][0] = 0;
+    Map[MapRowCounter][1] = 0;
+    MapRowCounter++;
+    PastMapRowCounter = MapRowCounter - 1;
+    if (direct == LEFT) {
+      PastIRReadingSLAM = Average[2];
+    }
+    else if (direct == RIGHT) {
+      PastIRReadingSLAM = Average[3];
+    }
+    PastUltrasonicSLAM = Average[4];
+    return;
+  }
+
+  //Use the ultrasound sensor and the IR sensor (direction given using the direct input) to gain information about the environment and map it to the 2D array
+  //The difference between the past and current measurements will dictace how far the robot has moved
+  if (direct == LEFT) {
+    IRReadingSLAM = Average[2];
+  }
+
+  else if (direct == RIGHT) {
+    IRReadingSLAM = Average[3];
+  }
+  UltrasonicSLAM = Average[4];
+
+  //Use the current readings and the past readings to calculate how far the robot has moved
+  UltrasonicDifference = PastUltrasonicSLAM - UltrasonicSLAM;
+  IRDifference = PastIRReadingSLAM - IRReadingSLAM;
+
+  //take the previous co-ordinates and add the differences for the new map measurements. Note that the difference will already be positive or negative to account for direction travelled.
+
+  //Ultrasonic (X Direction)
+  Map[MapRowCounter][0] = Map[PastMapRowCounter][0] + UltrasonicDifference;
+  //IR Sensor (Y Direction)
+  Map[MapRowCounter][1] = Map[PastMapRowCounter][1] + IRDifference;
+
+
+  //Adjust Past Values for next function call
+  MapRowCounter++;
+  PastMapRowCounter = MapRowCounter - 1;
+  PastIRReadingSLAM = IRReadingSLAM;
+  PastUltrasonicSLAM = UltrasonicSLAM;
+  return;
   
 }
 ///////////////////////////////////////////////////////////////////
