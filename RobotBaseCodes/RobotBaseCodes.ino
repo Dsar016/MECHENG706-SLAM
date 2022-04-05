@@ -35,7 +35,7 @@ SoftwareSerial BluetoothSerial(BLUETOOTH_RX, BLUETOOTH_TX);
 //#define NO_READ_GYRO  //Uncomment of GYRO is not attached.
 //#define NO_HCSR04 //Uncomment of HC-SR04 ultrasonic ranging sensor is not attached.
 //#define NO_READ_IR //Uncomment if IR Sensors not attached
-#define NO_BATTERY_V_OK //Uncomment of BATTERY_V_OK if you do not care about battery damage.
+//#define NO_BATTERY_V_OK //Uncomment of BATTERY_V_OK if you do not care about battery damage.
 
 //State machine states
 enum STATE {
@@ -239,7 +239,7 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
   //0 = Mid range sensor
   float Kx = 0.5;
   float Ky = 1;
-  float Kz = 25;
+  float Kz = 100;
   float Fx, Fy, Fz;
   float Confidence;
   
@@ -276,17 +276,17 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
     // Calculate Fz
     PreviousIRReading = CurrentIRReading;
     CurrentIRReading = Average[Left];
-    if (CurrentIRReading - PreviousIRReading > 0 && SideDistance - CurrentIRReading > 0) { // Gap is growing and above goal
-      Fz = Kz * (CurrentIRReading - PreviousIRReading);
-    }
-    if (CurrentIRReading - PreviousIRReading > 0 && SideDistance - CurrentIRReading < 0) { // Gap is growing and less than goal
+    if ((CurrentIRReading - PreviousIRReading > 0) && (SideDistance - CurrentIRReading > 0)) { // Gap is growing and above goal
       Fz = 0;
     }
-    if (CurrentIRReading - PreviousIRReading < 0 && SideDistance - CurrentIRReading > 0) { // Gap is shrinking and above goal
-      Fz = 0;
-    }
-    if (CurrentIRReading - PreviousIRReading < 0 && SideDistance - CurrentIRReading < 0) { // Gap is shrinking and less than goal
+    if ((CurrentIRReading - PreviousIRReading) > 0 && (SideDistance - CurrentIRReading < 0)) { // Gap is growing and less than goal
       Fz = Kz * (CurrentIRReading - PreviousIRReading);
+    }
+    if ((CurrentIRReading - PreviousIRReading < 0) && (SideDistance - CurrentIRReading > 0)) { // Gap is shrinking and above goal
+      Fz = Kz * (CurrentIRReading - PreviousIRReading);
+    }
+    if ((CurrentIRReading - PreviousIRReading < 0) && (SideDistance - CurrentIRReading < 0)) { // Gap is shrinking and less than goal
+      Fz = 0;
     }
 
     Fy = Ky * (SideDistance - CurrentIRReading);
