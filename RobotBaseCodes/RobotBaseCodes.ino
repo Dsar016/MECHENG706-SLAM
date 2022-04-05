@@ -233,76 +233,117 @@ void AlignEdge(float Distance) {
   stop();
 }
 
-void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct, bool dist) {
+void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int LongOrMid) {
+  //LongOrMid
+  //2 = Long range sensor
+  //0 = Mid range sensor
+  float Kx = 0.5;
+  float Ky = 1;
+  float Kz = 25;
+  float Fx, Fy, Fz;
+  float Confidence;
   
   for (int i = 0; i < 20; i++) {
     UpdateSensors(); 
   } // Update the sensor readings
-  
-  float tilt = 15;
-  float Left_Reading;
-  float Right_Reading;
-  float ultrasonic;
+  // Average[0] is Left Mid
+  // Avergae[1] is Right Mid
+  // Average[2] is Left Long
+  // Average[3] is Right Long
+  // Average[4] is ultrasonic
+  int Left = 0 + LongOrMid;
+  int Right = 1 + LongOrMid;
 
-  float tiltDerivative = 1;
-  float Error = 0;
-  float previousError = 0;
-  float rate = 0;
-  float ControllerEffort;
-  
-  // dist is which sensor to use (true) mid or (false) long
-  if (dist == true) {
-    Left_Reading = Average[0];
-    Right_Reading = Average[1];
+  //Robot Dimensions, specific measurements are shown in our notes
+  float Rw = 0.022; //Unit is metres
+  float L = 0.09; //Unit is metres
+  float t = 0.09; //Unit is metres
+  float Constant = 1 / Rw;
+
+  float ThetaOne, ThetaTwo, ThetaThree, ThetaFour;
+
+  float CurrentIRReading, PreviousIRReading;
+  if (direct == LEFT) {
+    CurrentIRReading = Average[Left];
   } else {
-    Left_Reading = Average[2];
-    Right_Reading = Average[3];
+    CurrentIRReading = Average[Right];
   }
   
-  ultrasonic = Average[4];
+  while (Average[4] >= ForwardDistance && direct == LEFT) {
+    UpdateSensors();
 
-  //Robot starts moving forward, will add IR Sensor reading
-  forward();
+    // Calculate Fz
+    // Calculate Fz
+    PreviousIRReading = CurrentIRReading;
+    CurrentIRReading = Average[Left];
+    if (CurrentIRReading - PreviousIRReading > 0 && SideDistance - CurrentIRReading > 0) { // Gap is growing and above goal
+      Fz = Kz * (CurrentIRReading - PreviousIRReading);
+    }
+    if (CurrentIRReading - PreviousIRReading > 0 && SideDistance - CurrentIRReading < 0) { // Gap is growing and less than goal
+      Fz = 0;
+    }
+    if (CurrentIRReading - PreviousIRReading < 0 && SideDistance - CurrentIRReading > 0) { // Gap is shrinking and above goal
+      Fz = 0;
+    }
+    if (CurrentIRReading - PreviousIRReading < 0 && SideDistance - CurrentIRReading < 0) { // Gap is shrinking and less than goal
+      Fz = Kz * (CurrentIRReading - PreviousIRReading);
+    }
+
+    Fy = Ky * (SideDistance - CurrentIRReading);
+
+    Fx = Kx / (abs((CurrentIRReading - PreviousIRReading) * (SideDistance - CurrentIRReading)) + 0.01);
+    
+    //Calculate Motor Speed
+    ThetaOne = Constant * (Fx + Fy - (L + t) * Fz);
+    ThetaTwo = Constant * (Fx - Fy + (L + t) * Fz);
+    ThetaThree = Constant * (Fx - Fy - (L + t) * Fz);
+    ThetaFour = Constant * (Fx + Fy + (L + t) * Fz);
+
+    // Calculate Motor Power
+    left_front_motor.writeMicroseconds(1500 + ThetaOne);
+    right_front_motor.writeMicroseconds(1500 - ThetaTwo);
+    left_rear_motor.writeMicroseconds(1500 + ThetaThree);
+    right_rear_motor.writeMicroseconds(1500 - ThetaFour);
+  }
+
+  while (Average[4] >= ForwardDistance && direct == RIGHT) {
+    UpdateSensors();
+    Kz = -Kz; // Change direction of rotation
+    Ky = -Ky; // Change direction of translation
+
+    // Calculate Fz
+    PreviousIRReading = CurrentIRReading;
+    CurrentIRReading = Average[Right];
+    if (CurrentIRReading - PreviousIRReading > 0 && SideDistance - CurrentIRReading > 0) { // Gap is growing and above goal
+      Fz = Kz * (CurrentIRReading - PreviousIRReading);
+    }
+    if (CurrentIRReading - PreviousIRReading > 0 && SideDistance - CurrentIRReading < 0) { // Gap is growing and less than goal
+      Fz = 0;
+    }
+    if (CurrentIRReading - PreviousIRReading < 0 && SideDistance - CurrentIRReading > 0) { // Gap is shrinking and above goal
+      Fz = 0;
+    }
+    if (CurrentIRReading - PreviousIRReading < 0 && SideDistance - CurrentIRReading < 0) { // Gap is shrinking and less than goal
+      Fz = Kz * (CurrentIRReading - PreviousIRReading);
+    }
+    
+    Fy = Ky * (SideDistance - CurrentIRReading);
+
+    Fx = Kx / (abs((CurrentIRReading - PreviousIRReading) * (SideDistance - CurrentIRReading)) + 0.01);
+    
+    //Calculate Motor Speed
+    ThetaOne = Constant * (Fx + Fy - (L + t) * Fz);
+    ThetaTwo = Constant * (Fx - Fy + (L + t) * Fz);
+    ThetaThree = Constant * (Fx - Fy - (L + t) * Fz);
+    ThetaFour = Constant * (Fx + Fy + (L + t) * Fz);
+
+    // Calculate Motor Power
+    left_front_motor.writeMicroseconds(1500 + ThetaOne);
+    right_front_motor.writeMicroseconds(1500 - ThetaTwo);
+    left_rear_motor.writeMicroseconds(1500 + ThetaThree);
+    right_rear_motor.writeMicroseconds(1500 - ThetaFour);
+  }
   
-  while(ultrasonic >= ForwardDistance){
-    UpdateSensors(); // Update the sensor readings
-    if (dist) {
-      Left_Reading = Average[0];
-      Right_Reading = Average[1];
-    } else {
-      Left_Reading = Average[2];
-      Right_Reading = Average[3];
-    }
-    
-    ultrasonic = Average[4];
-    
-    // Rear wheel drive
-    left_rear_motor.writeMicroseconds(1500 + speed_val);
-    right_rear_motor.writeMicroseconds(1500 - speed_val);
-
-    if (direct == LEFT) {
-      // Front wheel steer
-      Error = Left_Reading - SideDistance;
-      rate = Error - previousError;
-      ControllerEffort = (tilt * Error) + (tiltDerivative * rate);
-      left_front_motor.writeMicroseconds(1500 + speed_val - ControllerEffort);
-      right_front_motor.writeMicroseconds(1500 - speed_val - ControllerEffort); 
-
-      previousError = Error;
-    }
-
-    if (direct == RIGHT) {
-      // Front wheel steer
-      Error = Left_Reading - SideDistance;
-      rate = Error - previousError;
-      ControllerEffort = (tilt * Error) + (tiltDerivative * rate);      
-      left_front_motor.writeMicroseconds(1500 + speed_val - ControllerEffort);
-      right_front_motor.writeMicroseconds(1500 - speed_val - ControllerEffort);
-
-      previousError = Error;
-    }
-    
-    }
   stop();
  }
 
@@ -493,10 +534,10 @@ STATE running() {
     }
   } */
   
-  DIRECTION direct = RIGHT;
-  FollowEdge(15, 15, direct, false);
+  FollowEdge(15, 15, LEFT, 2);
   
   disable_motors();
+  delay(10000);
 }
 
 
