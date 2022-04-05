@@ -74,9 +74,9 @@ const int TRIG_PIN = 48;
 const int ECHO_PIN = 49;
 
 //IR Range Sensor Pins
-const int MID_RANGE_RIGHT_PIN = A14;  
+const int MID_RANGE_RIGHT_PIN = A14; 
 const int MID_RANGE_LEFT_PIN = A11;
-const int LONG_RANGE_RIGHT_PIN = A15; 
+const int LONG_RANGE_RIGHT_PIN = A15;
 const int LONG_RANGE_LEFT_PIN = A13;
 
 //List of IR range sensors on the robot
@@ -241,6 +241,7 @@ void AlignEdge(float Distance) {
 }
 
 void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct, bool dist) {
+
   UpdateSensors(); // Update the sensor readings
   float tilt = 15;
   float Left_Reading;
@@ -265,7 +266,8 @@ void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct, bool di
   forward();
   
   while(ultrasonic >= ForwardDistance){
-    UpdateSensors(); // Update the sensor readings
+    //UpdateSensors(); Sensor readings are updated inside the SLAM function
+    SLAM(direct);
     if (dist) {
       Left_Reading = Average[0];
       Right_Reading = Average[1];
@@ -451,6 +453,9 @@ void SLAM(DIRECTION direct){
   //IR Sensor (Y Direction)
   Map[MapRowCounter][1] = Map[PastMapRowCounter][1] + IRDifference;
 
+  SerialCom->print(Map[MapRowCounter][0]);
+  SerialCom->print(", ");
+  SerialCom->println(Map[MapRowCounter][1]);
 
   //Adjust Past Values for next function call
   MapRowCounter++;
@@ -530,10 +535,8 @@ STATE running() {
       direct = LEFT;
     }
   }
-
-  FollowEdge(15, direct);
   */
-  AlignEdge(10);
+  FollowEdge(15, 15, RIGHT, false);
   disable_motors();
 }
 
