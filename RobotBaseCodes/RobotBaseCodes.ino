@@ -228,32 +228,50 @@ void LocateCorner(void) {
     return distance[i];
   };
 
+  BluetoothSerial.println(); 
+  BluetoothSerial.println(); 
   //rotate car, populate measurement array and find min distance to wall
-  for(int i = 0; i < n; i++){
-    RotateDeg((360/n));
-    distance[i] = HC_SR04_range();
-    minIndex = distance[i] < distance[minIndex] ? minIndex : i;
-  }
+
+  for(int i = 0; i<100; i++)   UpdateSensors();
 
   for(int i = 0; i < n; i++){
-    SerialCom->print(distance[i]); 
-    SerialCom->print(", "); 
+    RotateDeg((360/(n+1)));
+    UpdateSensors();
+    distance[i] = Average[4]; 
+    BluetoothSerial.print(Average[4]); 
+    BluetoothSerial.print(", "); 
+    minIndex = distance[i] < distance[minIndex] || distance[minIndex] == 0 ? i : minIndex;
   }
 
-  SerialCom->println();
-  SerialCom->print("Min Dist: "); 
-  SerialCom->println(distance[minIndex]); 
 
+
+  /*delay(100000000);
+  for(int i = 0; i < n; i++){
+    BluetoothSerial.print(distance[i]); 
+    BluetoothSerial.print(", "); 
+  }*/
+
+  BluetoothSerial.println();
+  BluetoothSerial.print("Min Dist: "); 
+  BluetoothSerial.print(distance[minIndex]); 
+  BluetoothSerial.print(" at "); 
+  BluetoothSerial.print(minIndex); 
+  BluetoothSerial.print(" / "); 
+  BluetoothSerial.print(minIndex*(360.0/n)); 
+  BluetoothSerial.print(" deg "); 
+
+  delay(2000);
   
 
- /* //rotate to minimum dist to wall
-  RotateDeg(minIndex*(360/n)); 
+  //rotate to minimum dist to wall
+  RotateDeg(minIndex*(360.0/n)); 
+  BluetoothSerial.println("rotated"); 
 
   //correct if not pointing at the width (short) wall
-  if((getDist(minIndex) + getDist(minIndex + (int)(n/2))) < 
+  /*if((getDist(minIndex) + getDist(minIndex + (int)(n/2))) < 
     (getDist(minIndex + (int)(n/4)) + getDist(minIndex + (int)(3*n/4))))  
-      RotateDeg(90);*/
-      
+      RotateDeg(90);
+  */
 }
 
 void MoveToCorner(float distance) {
