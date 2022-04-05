@@ -308,26 +308,24 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
 
   while (Average[4] >= ForwardDistance && direct == RIGHT) {
     UpdateSensors();
-    Kz = -Kz; // Change direction of rotation
-    Ky = -Ky; // Change direction of translation
 
     // Calculate Fz
     PreviousIRReading = CurrentIRReading;
     CurrentIRReading = Average[Right];
     if (CurrentIRReading - PreviousIRReading > 0 && SideDistance - CurrentIRReading > 0) { // Gap is growing and above goal
-      Fz = Kz * (CurrentIRReading - PreviousIRReading);
+      Fz = 0;
     }
     if (CurrentIRReading - PreviousIRReading > 0 && SideDistance - CurrentIRReading < 0) { // Gap is growing and less than goal
-      Fz = 0;
+      Fz = -Kz * (CurrentIRReading - PreviousIRReading);
     }
     if (CurrentIRReading - PreviousIRReading < 0 && SideDistance - CurrentIRReading > 0) { // Gap is shrinking and above goal
-      Fz = 0;
+      Fz = -Kz * (CurrentIRReading - PreviousIRReading);
     }
     if (CurrentIRReading - PreviousIRReading < 0 && SideDistance - CurrentIRReading < 0) { // Gap is shrinking and less than goal
-      Fz = Kz * (CurrentIRReading - PreviousIRReading);
+      Fz = 0;
     }
     
-    Fy = Ky * (SideDistance - CurrentIRReading);
+    Fy = -Ky * (SideDistance - CurrentIRReading);
 
     Fx = Kx / (abs((CurrentIRReading - PreviousIRReading) * (SideDistance - CurrentIRReading)) + 0.01);
     
