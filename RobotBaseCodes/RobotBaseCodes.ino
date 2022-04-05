@@ -210,6 +210,13 @@ ISR(TIMER2_COMPA_vect) { //increment ms count
   msCount2++;
 }
 
+void CLRotateDeg(float deg){
+  double degDriven = 0; 
+
+  
+  
+}
+
 void LocateCorner(void) {
   
   const short n = 72; //division of measurement circle (n measurements for 360deg). most accurate as large multiple of 4
@@ -504,10 +511,83 @@ STATE running() {
   /*FollowEdge(15, 15, RIGHT);*/
 
 
-  LocateCorner();
-  delay(1000000000);
+  int speedvals[] = {
+                      75,
+                      100,
+                      150,
+                      200,
+                      250,
+                      500,
+                      750,
+                      1000,
+                      1500,
+                      -25,
+                      -50,
+                      -75,
+                      -100,
+                      -150,
+                      -200,
+                      -250,
+                      -500,
+                      -750,
+                      -1000,
+                      -1500,
+};
+
+GYRO_calibrate();
+
+  speed_val = speedvals[5];
+  BluetoothSerial.println(speed_val);
+  cw();
+  double total = 0;
+  for(int j = 0; j < 100; j++){
+    total += GYRO_reading();
+    BluetoothSerial.println(GYRO_reading());
+    delay(150);
+  }
+  BluetoothSerial.print("Average: ");
+  BluetoothSerial.println(total/100);
+
+  delay(1000000);
+
+
+
+  /*LocateCorner();
+  delay(1000000000);*/
   //disable_motors();
 }
+
+#ifndef NO_READ_GYRO
+float gyroSupplyVoltage = 5;  
+float gyroZeroVoltage = 0;   
+
+float gyroSensitivity = 0.007;       
+float rotationThreshold = 1.5;  
+
+float currentAngle = 0;
+
+bool GYRO_calibrate(){
+  float sum = 0;
+  int n = 100; //number of measurements 
+
+  for(int i = 0; i < n; i++){
+    sum += gyroSupplyVoltage*(analogRead(GYRO_PIN)/1023.0);
+  }
+
+  gyroZeroVoltage = sum/n; 
+
+  return true;
+}
+
+float GYRO_reading()
+{
+  float gyroRate = (analogRead(GYRO_PIN)/1023.0)*gyroSupplyVoltage - gyroZeroVoltage;
+  float angularVelocity = gyroRate/gyroSensitivity;
+
+  return angularVelocity>rotationThreshold ? angularVelocity : 0;
+  
+}
+#endif
 
 
 //Stop of Lipo Battery voltage is too low, to protect Battery
@@ -745,14 +825,6 @@ void IR_reading(IR_SENSOR sensor)
       //SerialCom->println(" Cm");
       break;
   }
-}
-#endif
-
-#ifndef NO_READ_GYRO
-void GYRO_reading()
-{
-  SerialCom->print("GYRO A3:");
-  SerialCom->println(analogRead(GYRO_PIN));
 }
 #endif
 
