@@ -457,7 +457,7 @@ void SLAM(DIRECTION direct){
     //take the previous co-ordinates and add the differences for the new map measurements. Note that the difference will already be positive or negative to account for direction travelled.
     //IR Sensor (Y Direction)
     Map[MapRowCounter][1] = Map[PastMapRowCounter][1] + IRDifference;
-    PastDIrect = direct;
+    PastDirect = direct;
   }
 
   else if (PastDirect != direct){
@@ -468,9 +468,9 @@ void SLAM(DIRECTION direct){
   
 
 
-  SerialCom->print(Map[MapRowCounter][0]);
-  SerialCom->print(", ");
-  SerialCom->println(Map[MapRowCounter][1]);
+  BluetoothSerial.print(Map[MapRowCounter][0]);
+  BluetoothSerial.print(", ");
+  BluetoothSerial.println(Map[MapRowCounter][1]);
 
   //Adjust Past Values for next function call
   MapRowCounter++;
