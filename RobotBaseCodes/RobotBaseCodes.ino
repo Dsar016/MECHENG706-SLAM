@@ -55,9 +55,9 @@ enum DIRECTION {
 };
 
 // Moving Average
-double CurrentIR[5];
-double Average[5];
-double oldIR[5][10];
+double CurrentSensor[6]; //IR 1-4 //Ultrasonic //Gyro
+double Average[6];
+double PrevSensor[6][10];
 int timer2i = 0;
 
 //Refer to Shield Pinouts.jpg for pin locations
@@ -217,13 +217,18 @@ void CLRotateDeg(float degDesired){
 
   const float errorTolerance = 0; 
   float prevError = 0, error = degDesired - degDriven;
+  float prevGyro = GYRO_reading();
 
   int deltaT = 10; //ms
 
   while(error > errorTolerance){
-    float v = GYRO_reading();
+    UpdateSensors();
+    float omega = Average[5];  
+    BluetoothSerial.println(Average[5]);
     
-    degDriven += v*deltaT/1000.0;
+    prevGyro = omega;
+    
+    degDriven += omega*deltaT/1000.0;
 
     error = degDesired - degDriven;
 
@@ -448,28 +453,31 @@ void UpdateSensors() {
   // Take and compare new IR sensor readings with previous sensor readings
   
   // Find current sensor readings
-  CurrentIR[0] = IRSensorReading(LEFT_MID);
-  CurrentIR[1] = IRSensorReading(RIGHT_MID);
-  CurrentIR[2] = IRSensorReading(LEFT_LONG);
-  CurrentIR[3] = IRSensorReading(RIGHT_LONG);
-  CurrentIR[4] = HC_SR04_range();
+  CurrentSensor[0] = IRSensorReading(LEFT_MID);
+  CurrentSensor[1] = IRSensorReading(RIGHT_MID);
+  CurrentSensor[2] = IRSensorReading(LEFT_LONG);
+  CurrentSensor[3] = IRSensorReading(RIGHT_LONG);
+  CurrentSensor[4] = HC_SR04_range();
+  CurrentSensor[5] = GYRO_reading();
+  //CurrentSensor
   
   double total;
   // Find average reading from past 10 readings
-  for (int n = 0; n < 5; n++) {
+  for (int n = 0; n < sizeof(CurrentSensor); n++) {
     total = 0;
     for (int m = 0; m < 10; m++) {
-      total = oldIR[n][m] + total;
+      total = PrevSensor[n][m] + total;
     }
     Average[n] = total/10;
   }
   
   // Add current reading to old readings
-  oldIR[0][timer2i] = CurrentIR[0];
-  oldIR[1][timer2i] = CurrentIR[1];
-  oldIR[2][timer2i] = CurrentIR[2];
-  oldIR[3][timer2i] = CurrentIR[3];
-  oldIR[4][timer2i] = CurrentIR[4];
+  PrevSensor[0][timer2i] = CurrentSensor[0];
+  PrevSensor[1][timer2i] = CurrentSensor[1];
+  PrevSensor[2][timer2i] = CurrentSensor[2];
+  PrevSensor[3][timer2i] = CurrentSensor[3];
+  PrevSensor[4][timer2i] = CurrentSensor[4];
+  PrevSensor[5][timer2i] = CurrentSensor[5];
   
   timer2i = (timer2i+1)%10;
 }
@@ -574,7 +582,10 @@ STATE running() {
 
 GYRO_calibrate();
 
-LocateCorner();
+
+
+CLRotateDeg(90);
+//LocateCorner();
 
   /*speed_val = speedvals[5];
   BluetoothSerial.println(speed_val);
@@ -601,7 +612,7 @@ LocateCorner();
 float gyroSupplyVoltage = 5;  
 float gyroZeroVoltage = 0;   
 
-float gyroSensitivity = 0.006;// 0.007 + 0.007*0.04;       
+float gyroSensitivity = 0.0065;// 0.007 + 0.007*0.04;       
 float rotationThreshold = 1.5;  
 
 float currentAngle = 0;
@@ -619,12 +630,20 @@ bool GYRO_calibrate(){
   return true;
 }
 
+
+float prevAngularVelocity = 0;
+
 float GYRO_reading()
 {
+  
   float gyroRate = (analogRead(GYRO_PIN)/1023.0)*gyroSupplyVoltage - gyroZeroVoltage;
   float angularVelocity = gyroRate/gyroSensitivity;
 
-  return angularVelocity>rotationThreshold ? angularVelocity : 0;
+  angularVelocity = angularVelocity>rotationThreshold ? angularVelocity : 0;
+  //angularVelocity = KalmanFilter(angularVelocity, prevAngularVelocity);
+
+  prevAngularVelocity = angularVelocity; 
+  return angularVelocity;
   
 }
 #endif
