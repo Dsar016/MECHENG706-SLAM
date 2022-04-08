@@ -74,9 +74,9 @@ const int TRIG_PIN = 48;
 const int ECHO_PIN = 49;
 
 //IR Range Sensor Pins
-const int MID_RANGE_RIGHT_PIN = A14;  
+const int MID_RANGE_RIGHT_PIN = A14; 
 const int MID_RANGE_LEFT_PIN = A11;
-const int LONG_RANGE_RIGHT_PIN = A15; 
+const int LONG_RANGE_RIGHT_PIN = A15;
 const int LONG_RANGE_LEFT_PIN = A13;
 
 //List of IR range sensors on the robot
@@ -103,7 +103,15 @@ double process_noise = 10; //High if the process itself has lots of noise
 double sensor_noise = 1; //High if the sensor has lots of noise
 //Note: these noises are relative to each other, so if the process is stable, the sensor noise value will be larger due to this
 
-//Long Right Sensor uses a logarithmic equation instead of a power equation, so the constants are defined differently, they need to be calculated every loop, as the changing reading is right in the middle of the equation
+//Map array, which is initially set to 0,0. The 0,0 point will be taken after the robot has found the corner. it will be a nx2 array. 
+const int ROW_MAX = 1000;
+const int COL_MAX = 2;
+int Map[ROW_MAX][COL_MAX]; //First column is x position, second column is y position. X position will be along the long end of the table
+int MapRowCounter = 0;
+int PastMapRowCounter = 0;
+float IRReadingSLAM, PastIRReadingSLAM, UltrasonicSLAM, PastUltrasonicSLAM;
+DIRECTION PastDirect;
+
 
 //Gyro Analog Pin
 const int GYRO_PIN = A3;
@@ -233,6 +241,7 @@ void AlignEdge(float Distance) {
   stop();
 }
 
+
 void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int LongOrMid) {
   //LongOrMid
   //2 = Long range sensor
@@ -242,6 +251,7 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
   float Kz = 50;
   float Fx, Fy, Fz;
   float Confidence;
+
   
   for (int i = 0; i < 20; i++) {
     UpdateSensors(); 
@@ -285,6 +295,7 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
     }
     if ((CurrentIRReading - PreviousIRReading < 0) && (SideDistance - CurrentIRReading > 0)) { // Gap is shrinking and above goal
       Fz = Kz * (CurrentIRReading - PreviousIRReading);
+
     }
     if ((CurrentIRReading - PreviousIRReading < 0) && (SideDistance - CurrentIRReading < 0)) { // Gap is shrinking and less than goal
       Fz = 0;
@@ -449,6 +460,79 @@ void UpdateSensors() {
   
   timer2i = (timer2i+1)%10;
 }
+
+void SLAM(DIRECTION direct){
+  
+  float IRDifference, UltrasonicDifference;
+  //Update Sensor readings
+  for (int i = 0; i < 20; i++) {
+    UpdateSensors(); 
+  }
+    
+  //This function will be used to create a map and port it externally
+  if (MapRowCounter == 0){//The SLAM function should only be run once the robot is in the corner, so it can be initialised as the 0,0 position
+    Map[MapRowCounter][0] = 0;
+    Map[MapRowCounter][1] = 0;
+    MapRowCounter++;
+    PastMapRowCounter = MapRowCounter - 1;
+    PastDirect = direct;
+    if (direct == LEFT) {
+      PastIRReadingSLAM = Average[2];
+    }
+    else if (direct == RIGHT) {
+      PastIRReadingSLAM = Average[3];
+    }
+    PastUltrasonicSLAM = Average[4];
+    return;
+  }
+
+  //Use the ultrasound sensor and the IR sensor (direction given using the direct input) to gain information about the environment and map it to the 2D array
+  //The difference between the past and current measurements will dictace how far the robot has moved
+  if (direct == LEFT) {
+    IRReadingSLAM = Average[2];
+  }
+
+  else if (direct == RIGHT) {
+    IRReadingSLAM = Average[3];
+  }
+  UltrasonicSLAM = Average[4];
+
+  //The mapping method for the y direction is different depending on which half of the table the robot is on, the x co-ordinate method is unaffected
+  UltrasonicDifference = PastUltrasonicSLAM - UltrasonicSLAM;
+  //Ultrasonic (X Direction)
+  Map[MapRowCounter][0] = Map[PastMapRowCounter][0] + UltrasonicDifference;  
+  
+  if (PastDirect == direct){
+    //Robot is still in the first half of the mapping phase, calculations are done in the following code
+    //Use the current readings and the past readings to calculate how far the robot has moved
+    IRDifference = PastIRReadingSLAM - IRReadingSLAM;
+  
+    //take the previous co-ordinates and add the differences for the new map measurements. Note that the difference will already be positive or negative to account for direction travelled.
+    //IR Sensor (Y Direction)
+    Map[MapRowCounter][1] = Map[PastMapRowCounter][1] + IRDifference;
+    PastDirect = direct;
+  }
+
+  else if (PastDirect != direct){
+    //IR Difference is calculated in a different way, do not update the PastDirect value in this section so that this conditional is fufilled for the rest of the function
+    IRDifference = 120 - IRReadingSLAM; //120cm wide table, at the second half IR sensor is reading how far away it is from the 120cm mark instead of the origin.
+    Map[MapRowCounter][1] = IRDifference; 
+  }
+  
+
+
+  BluetoothSerial.print(Map[MapRowCounter][0]);
+  BluetoothSerial.print(", ");
+  BluetoothSerial.println(Map[MapRowCounter][1]);
+
+  //Adjust Past Values for next function call
+  MapRowCounter++;
+  PastMapRowCounter = MapRowCounter - 1;
+  PastIRReadingSLAM = IRReadingSLAM;
+  PastUltrasonicSLAM = UltrasonicSLAM;
+  return;
+  
+}
 ///////////////////////////////////////////////////////////////////
 
 STATE initialising() {
@@ -523,6 +607,7 @@ STATE running() {
     } else {
       direct = LEFT;
     }
+
     if (direct == LEFT) {
       whileCheck = Average[2];
     } else {
