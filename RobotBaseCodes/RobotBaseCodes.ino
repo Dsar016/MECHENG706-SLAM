@@ -35,7 +35,7 @@ SoftwareSerial BluetoothSerial(BLUETOOTH_RX, BLUETOOTH_TX);
 //#define NO_READ_GYRO  //Uncomment of GYRO is not attached.
 //#define NO_HCSR04 //Uncomment of HC-SR04 ultrasonic ranging sensor is not attached.
 //#define NO_READ_IR //Uncomment if IR Sensors not attached
-#define NO_BATTERY_V_OK //Uncomment of BATTERY_V_OK if you do not care about battery damage.
+//#define NO_BATTERY_V_OK //Uncomment of BATTERY_V_OK if you do not care about battery damage.
 
 //State machine states
 enum STATE {
@@ -241,63 +241,117 @@ void AlignEdge(float Distance) {
   stop();
 }
 
-void FollowEdge(int ForwardDistance, int SideDistance, DIRECTION direct, bool dist) {
 
-  UpdateSensors(); // Update the sensor readings
-  float tilt = 15;
-  float Left_Reading;
-  float Right_Reading;
-  float ultrasonic;
+void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int LongOrMid) {
+  //LongOrMid
+  //2 = Long range sensor
+  //0 = Mid range sensor
+  float Kx = 0.5;
+  float Ky = 0.5;
+  float Kz = 50;
+  float Fx, Fy, Fz;
+  float Confidence;
 
-  float tiltIntegral = 0.0;
-  float tiltError = 0;
   
-  // dist is which sensor to use (true) mid or (false) long
-  if (dist == true) {
-    Left_Reading = Average[0];
-    Right_Reading = Average[1];
+  for (int i = 0; i < 20; i++) {
+    UpdateSensors(); 
+  } // Update the sensor readings
+  // Average[0] is Left Mid
+  // Avergae[1] is Right Mid
+  // Average[2] is Left Long
+  // Average[3] is Right Long
+  // Average[4] is ultrasonic
+  int Left = 0 + LongOrMid;
+  int Right = 1 + LongOrMid;
+
+  //Robot Dimensions, specific measurements are shown in our notes
+  float Rw = 0.022; //Unit is metres
+  float L = 0.09; //Unit is metres
+  float t = 0.09; //Unit is metres
+  float Constant = 1 / Rw;
+
+  float ThetaOne, ThetaTwo, ThetaThree, ThetaFour;
+
+  float CurrentIRReading, PreviousIRReading;
+  if (direct == LEFT) {
+    CurrentIRReading = Average[Left];
   } else {
-    Left_Reading = Average[2];
-    Right_Reading = Average[3];
+    CurrentIRReading = Average[Right];
   }
   
-  ultrasonic = Average[4];
+  while (Average[4] >= ForwardDistance && direct == LEFT) {
+    UpdateSensors();
 
-  //Robot starts moving forward, will add IR Sensor reading
-  forward();
+    PreviousIRReading = CurrentIRReading;
+    CurrentIRReading = Average[Left];
+
+    Fy = Ky * (SideDistance - CurrentIRReading);
+    
+    if ((CurrentIRReading - PreviousIRReading > 0) && (SideDistance - CurrentIRReading > 0)) { // Gap is growing and above goal
+      Fz = 0;
+    }
+    if ((CurrentIRReading - PreviousIRReading) > 0 && (SideDistance - CurrentIRReading < 0)) { // Gap is growing and less than goal
+      Fz = Kz * (CurrentIRReading - PreviousIRReading);
+    }
+    if ((CurrentIRReading - PreviousIRReading < 0) && (SideDistance - CurrentIRReading > 0)) { // Gap is shrinking and above goal
+      Fz = Kz * (CurrentIRReading - PreviousIRReading);
+
+    }
+    if ((CurrentIRReading - PreviousIRReading < 0) && (SideDistance - CurrentIRReading < 0)) { // Gap is shrinking and less than goal
+      Fz = 0;
+    }
+
+    Fx = Kx / (abs((CurrentIRReading - PreviousIRReading) * (SideDistance - CurrentIRReading)) + 0.01);
+    
+    //Calculate Motor Speed
+    ThetaOne = Constant * (Fx + Fy - (L + t) * Fz);
+    ThetaTwo = Constant * (Fx - Fy + (L + t) * Fz);
+    ThetaThree = Constant * (Fx - Fy - (L + t) * Fz);
+    ThetaFour = Constant * (Fx + Fy + (L + t) * Fz);
+
+    // Calculate Motor Power
+    left_front_motor.writeMicroseconds(1500 + ThetaOne);
+    right_front_motor.writeMicroseconds(1500 - ThetaTwo);
+    left_rear_motor.writeMicroseconds(1500 + ThetaThree);
+    right_rear_motor.writeMicroseconds(1500 - ThetaFour);
+  }
+
+  while (Average[4] >= ForwardDistance && direct == RIGHT) {
+    UpdateSensors();
+
+    // Calculate Fz
+    PreviousIRReading = CurrentIRReading;
+    CurrentIRReading = Average[Right];
+    if (CurrentIRReading - PreviousIRReading > 0 && SideDistance - CurrentIRReading > 0) { // Gap is growing and above goal
+      Fz = 0;
+    }
+    if (CurrentIRReading - PreviousIRReading > 0 && SideDistance - CurrentIRReading < 0) { // Gap is growing and less than goal
+      Fz = -Kz * (CurrentIRReading - PreviousIRReading);
+    }
+    if (CurrentIRReading - PreviousIRReading < 0 && SideDistance - CurrentIRReading > 0) { // Gap is shrinking and above goal
+      Fz = -Kz * (CurrentIRReading - PreviousIRReading);
+    }
+    if (CurrentIRReading - PreviousIRReading < 0 && SideDistance - CurrentIRReading < 0) { // Gap is shrinking and less than goal
+      Fz = 0;
+    }
+    
+    Fy = -Ky * (SideDistance - CurrentIRReading);
+
+    Fx = Kx / (abs((CurrentIRReading - PreviousIRReading) * (SideDistance - CurrentIRReading)) + 0.01);
+    
+    //Calculate Motor Speed
+    ThetaOne = Constant * (Fx + Fy - (L + t) * Fz);
+    ThetaTwo = Constant * (Fx - Fy + (L + t) * Fz);
+    ThetaThree = Constant * (Fx - Fy - (L + t) * Fz);
+    ThetaFour = Constant * (Fx + Fy + (L + t) * Fz);
+
+    // Calculate Motor Power
+    left_front_motor.writeMicroseconds(1500 + ThetaOne);
+    right_front_motor.writeMicroseconds(1500 - ThetaTwo);
+    left_rear_motor.writeMicroseconds(1500 + ThetaThree);
+    right_rear_motor.writeMicroseconds(1500 - ThetaFour);
+  }
   
-  while(ultrasonic >= ForwardDistance){
-    //UpdateSensors(); Sensor readings are updated inside the SLAM function
-    SLAM(direct);
-    if (dist) {
-      Left_Reading = Average[0];
-      Right_Reading = Average[1];
-    } else {
-      Left_Reading = Average[2];
-      Right_Reading = Average[3];
-    }
-    
-    ultrasonic = Average[4];
-
-    // Rear wheel drive
-    left_rear_motor.writeMicroseconds(1500 + speed_val);
-    right_rear_motor.writeMicroseconds(1500 - speed_val);
-
-    if (direct == LEFT) {
-      // Front wheel steer
-      tiltError = tiltError + Left_Reading - SideDistance;
-      left_front_motor.writeMicroseconds(1500 + speed_val - tilt*(Left_Reading - SideDistance));
-      right_front_motor.writeMicroseconds(1500 - speed_val - tilt*(Left_Reading - SideDistance)); 
-    }
-
-    if (direct == RIGHT) {
-      // Front wheel steer
-      tiltError = tiltError - Right_Reading + SideDistance;
-      left_front_motor.writeMicroseconds(1500 + speed_val - tilt*(-Right_Reading + SideDistance));
-      right_front_motor.writeMicroseconds(1500 - speed_val - tilt*(-Right_Reading + SideDistance));
-    }
-    
-    }
   stop();
  }
 
@@ -308,8 +362,7 @@ void Shift(DIRECTION direct) {
   } else if(direct == RIGHT) {
     strafe_right();
   }
-
-  delay(2500);
+  
   stop();
 }
 
@@ -522,37 +575,53 @@ STATE running() {
   #endif
   }
 
-  // PROTOTYPE 1 //////////////////////
-  /*
+  /*// PROTOTYPE 1 //////////////////////
+  
   double dist;
   
-  LocateCorner();
-  MoveToCorner();
-  AlignEdge();
-  FollowEdge(15, LEFT);
+  //LocateCorner();
+  //MoveToCorner();
+  //AlignEdge();
+  FollowEdge(15, 15, LEFT, false);
+  delay(1000);
   DIRECTION direct = RIGHT;
   DIRECTION follow_edge;
+  float whileCheck = 20;
 
-  while(0) { // distance read in direct direction < 15
+  while(whileCheck > 15) { // distance read in direct direction < 15
     Shift(direct);
+    delay(1000);
     Rotate180();
+    delay(1000);
     dist = FindCloseEdge();
     if(dist > 0) {
       follow_edge = LEFT;
     } else {
       follow_edge = RIGHT;
     }
-    FollowEdge(abs(dist), follow_edge);
+    FollowEdge(15, abs(dist), follow_edge, false);
+    delay(1000);
     
     if(direct = LEFT) {
       direct = RIGHT;
     } else {
       direct = LEFT;
     }
-  }
-  */
-  FollowEdge(15, 15, RIGHT, false);
+
+    if (direct == LEFT) {
+      whileCheck = Average[2];
+    } else {
+      whileCheck = Average[3];
+    }
+  } */
+  for (int i = 0; i < 20; i++) {
+    UpdateSensors(); 
+  } // Update the sensor readings
+  
+  FollowEdge(15, Average[2], LEFT, 2);
+  
   disable_motors();
+  delay(10000);
 }
 
 
