@@ -133,14 +133,6 @@ void setup(void)
   digitalWrite(TRIG_PIN, LOW);
 
   cli();
-
-  //set timer2 interrupt at 1000Hz
-   OCR2A = 125; //(must be <256)
-   TCCR2A |= (1 << WGM11); // turn on CTC mode
-   TCCR2B |= (1 << CS22); // Prescaler 128
-   TCCR2B |= (1 << CS20);
-   // enable timer compare interrupt
-   TIMSK2 |= (1 << OCIE1A);
   
   sei();
 
@@ -205,11 +197,6 @@ void RotateDeg(float deg = 0.0){
   SerialCom->println("stop");
 }
 
-ISR(TIMER2_COMPA_vect) { //increment ms count
-  TCNT2 = 0;
-  msCount2++;
-}
-
 void CLRotateDeg(float degDesired){
   double degDriven = 0; 
 
@@ -223,8 +210,8 @@ void CLRotateDeg(float degDesired){
 
   while(error > errorTolerance){
     UpdateSensors();
-    float omega = Average[5];  
-    BluetoothSerial.println(Average[5]);
+    float omega = GYRO_reading();// Average[5];  
+    //BluetoothSerial.println(Average[5]);
     
     prevGyro = omega;
     
