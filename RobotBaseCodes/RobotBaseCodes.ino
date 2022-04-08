@@ -110,6 +110,7 @@ int Map[ROW_MAX][COL_MAX]; //First column is x position, second column is y posi
 int MapRowCounter = 0;
 int PastMapRowCounter = 0;
 float IRReadingSLAM, PastIRReadingSLAM, UltrasonicSLAM, PastUltrasonicSLAM;
+DIRECTION PastDirect;
 
 
 //Gyro Analog Pin
@@ -421,6 +422,7 @@ void SLAM(DIRECTION direct){
     Map[MapRowCounter][1] = 0;
     MapRowCounter++;
     PastMapRowCounter = MapRowCounter - 1;
+    PastDirect = direct;
     if (direct == LEFT) {
       PastIRReadingSLAM = Average[2];
     }
@@ -442,16 +444,29 @@ void SLAM(DIRECTION direct){
   }
   UltrasonicSLAM = Average[4];
 
-  //Use the current readings and the past readings to calculate how far the robot has moved
+  //The mapping method for the y direction is different depending on which half of the table the robot is on, the x co-ordinate method is unaffected
   UltrasonicDifference = PastUltrasonicSLAM - UltrasonicSLAM;
-  IRDifference = PastIRReadingSLAM - IRReadingSLAM;
-
-  //take the previous co-ordinates and add the differences for the new map measurements. Note that the difference will already be positive or negative to account for direction travelled.
-
   //Ultrasonic (X Direction)
-  Map[MapRowCounter][0] = Map[PastMapRowCounter][0] + UltrasonicDifference;
-  //IR Sensor (Y Direction)
-  Map[MapRowCounter][1] = Map[PastMapRowCounter][1] + IRDifference;
+  Map[MapRowCounter][0] = Map[PastMapRowCounter][0] + UltrasonicDifference;  
+  
+  if (PastDirect == direct){
+    //Robot is still in the first half of the mapping phase, calculations are done in the following code
+    //Use the current readings and the past readings to calculate how far the robot has moved
+    IRDifference = PastIRReadingSLAM - IRReadingSLAM;
+  
+    //take the previous co-ordinates and add the differences for the new map measurements. Note that the difference will already be positive or negative to account for direction travelled.
+    //IR Sensor (Y Direction)
+    Map[MapRowCounter][1] = Map[PastMapRowCounter][1] + IRDifference;
+    PastDIrect = direct;
+  }
+
+  else if (PastDirect != direct){
+    //IR Difference is calculated in a different way, do not update the PastDirect value in this section so that this conditional is fufilled for the rest of the function
+    IRDifference = 120 - IRReadingSLAM; //120cm wide table, at the second half IR sensor is reading how far away it is from the 120cm mark instead of the origin.
+    Map[MapRowCounter][1] = IRDifference; 
+  }
+  
+
 
   SerialCom->print(Map[MapRowCounter][0]);
   SerialCom->print(", ");
