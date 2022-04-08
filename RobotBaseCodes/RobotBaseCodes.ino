@@ -210,11 +210,49 @@ ISR(TIMER2_COMPA_vect) { //increment ms count
   msCount2++;
 }
 
-void CLRotateDeg(float deg){
+void CLRotateDeg(float degDesired){
   double degDriven = 0; 
 
-  
-  
+  const int Kp = 3, Ki = 0, Kd = 0;
+
+  const float errorTolerance = 0; 
+  float prevError = 0, error = degDesired - degDriven;
+
+  int deltaT = 10; //ms
+
+  while(error > errorTolerance){
+    float v = GYRO_reading();
+    
+    degDriven += v*deltaT/1000.0;
+
+    error = degDesired - degDriven;
+
+    //float rateDerivative = (error - prevError)*1000.0/deltaT;
+
+    float effort = Kp*error;
+
+    if(abs(effort) < 75){
+      if(effort > 0) effort = 75;
+      else effort = -75;
+    }
+
+    if(effort > 500) effort = 500; 
+    if(effort < -500) effort = -500;
+
+    speed_val = abs(effort); 
+
+    if(effort > 0) cw();
+    else ccw();
+
+
+    //BluetoothSerial.println(v);
+
+    prevError = error;
+
+    delay(deltaT);
+  }
+
+  stop();
 }
 
 void LocateCorner(void) {
@@ -242,7 +280,7 @@ void LocateCorner(void) {
   for(int i = 0; i<100; i++)   UpdateSensors();
 
   for(int i = 0; i < n; i++){
-    RotateDeg((360/(n+1)));
+    CLRotateDeg((360/(n)));
     UpdateSensors();
     distance[i] = Average[4]; 
     BluetoothSerial.print(Average[4]); 
@@ -271,7 +309,7 @@ void LocateCorner(void) {
   
 
   //rotate to minimum dist to wall
-  RotateDeg(minIndex*(360.0/n)); 
+  CLRotateDeg(minIndex*(360.0/n)); 
   BluetoothSerial.println("rotated"); 
 
   //correct if not pointing at the width (short) wall
@@ -536,7 +574,9 @@ STATE running() {
 
 GYRO_calibrate();
 
-  speed_val = speedvals[5];
+LocateCorner();
+
+  /*speed_val = speedvals[5];
   BluetoothSerial.println(speed_val);
   cw();
   double total = 0;
@@ -546,7 +586,7 @@ GYRO_calibrate();
     delay(150);
   }
   BluetoothSerial.print("Average: ");
-  BluetoothSerial.println(total/100);
+  BluetoothSerial.println(total/100);*/
 
   delay(1000000);
 
@@ -561,7 +601,7 @@ GYRO_calibrate();
 float gyroSupplyVoltage = 5;  
 float gyroZeroVoltage = 0;   
 
-float gyroSensitivity = 0.007;       
+float gyroSensitivity = 0.006;// 0.007 + 0.007*0.04;       
 float rotationThreshold = 1.5;  
 
 float currentAngle = 0;
