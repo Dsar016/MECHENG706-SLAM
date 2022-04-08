@@ -238,8 +238,8 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
   //2 = Long range sensor
   //0 = Mid range sensor
   float Kx = 0.5;
-  float Ky = 1;
-  float Kz = 100;
+  float Ky = 0.5;
+  float Kz = 50;
   float Fx, Fy, Fz;
   float Confidence;
   
@@ -272,10 +272,11 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
   while (Average[4] >= ForwardDistance && direct == LEFT) {
     UpdateSensors();
 
-    // Calculate Fz
-    // Calculate Fz
     PreviousIRReading = CurrentIRReading;
     CurrentIRReading = Average[Left];
+
+    Fy = Ky * (SideDistance - CurrentIRReading);
+    
     if ((CurrentIRReading - PreviousIRReading > 0) && (SideDistance - CurrentIRReading > 0)) { // Gap is growing and above goal
       Fz = 0;
     }
@@ -288,8 +289,6 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
     if ((CurrentIRReading - PreviousIRReading < 0) && (SideDistance - CurrentIRReading < 0)) { // Gap is shrinking and less than goal
       Fz = 0;
     }
-
-    Fy = Ky * (SideDistance - CurrentIRReading);
 
     Fx = Kx / (abs((CurrentIRReading - PreviousIRReading) * (SideDistance - CurrentIRReading)) + 0.01);
     
@@ -352,8 +351,7 @@ void Shift(DIRECTION direct) {
   } else if(direct == RIGHT) {
     strafe_right();
   }
-
-  delay(2500);
+  
   stop();
 }
 
@@ -531,8 +529,11 @@ STATE running() {
       whileCheck = Average[3];
     }
   } */
+  for (int i = 0; i < 20; i++) {
+    UpdateSensors(); 
+  } // Update the sensor readings
   
-  FollowEdge(15, 15, LEFT, 2);
+  FollowEdge(15, Average[2], LEFT, 2);
   
   disable_motors();
   delay(10000);
