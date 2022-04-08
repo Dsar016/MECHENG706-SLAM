@@ -104,9 +104,9 @@ double sensor_noise = 1; //High if the sensor has lots of noise
 //Note: these noises are relative to each other, so if the process is stable, the sensor noise value will be larger due to this
 
 //Map array, which is initially set to 0,0. The 0,0 point will be taken after the robot has found the corner. it will be a nx2 array. 
-const int ROW_MAX = 1000;
+const int ROW_MAX = 500;
 const int COL_MAX = 2;
-int Map[ROW_MAX][COL_MAX]; //First column is x position, second column is y position. X position will be along the long end of the table
+float Map[ROW_MAX][COL_MAX]; //First column is x position, second column is y position. X position will be along the long end of the table
 int MapRowCounter = 0;
 int PastMapRowCounter = 0;
 float IRReadingSLAM, PastIRReadingSLAM, UltrasonicSLAM, PastUltrasonicSLAM;
@@ -252,6 +252,7 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
   float Fx, Fy, Fz;
   float Confidence;
 
+ 
   
   for (int i = 0; i < 20; i++) {
     UpdateSensors(); 
@@ -281,6 +282,7 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
   
   while (Average[4] >= ForwardDistance && direct == LEFT) {
     UpdateSensors();
+    SLAM(direct);
 
     PreviousIRReading = CurrentIRReading;
     CurrentIRReading = Average[Left];
@@ -318,7 +320,8 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
 
   while (Average[4] >= ForwardDistance && direct == RIGHT) {
     UpdateSensors();
-
+    SLAM(direct);
+    
     // Calculate Fz
     PreviousIRReading = CurrentIRReading;
     CurrentIRReading = Average[Right];
@@ -465,16 +468,12 @@ void SLAM(DIRECTION direct){
   
   float IRDifference, UltrasonicDifference;
   //Update Sensor readings
-  for (int i = 0; i < 20; i++) {
-    UpdateSensors(); 
-  }
     
   //This function will be used to create a map and port it externally
   if (MapRowCounter == 0){//The SLAM function should only be run once the robot is in the corner, so it can be initialised as the 0,0 position
-    Map[MapRowCounter][0] = 0;
-    Map[MapRowCounter][1] = 0;
-    MapRowCounter++;
-    PastMapRowCounter = MapRowCounter - 1;
+    Map[0][0] = 0;
+    Map[0][1] = 0;
+
     PastDirect = direct;
     if (direct == LEFT) {
       PastIRReadingSLAM = Average[2];
@@ -483,6 +482,12 @@ void SLAM(DIRECTION direct){
       PastIRReadingSLAM = Average[3];
     }
     PastUltrasonicSLAM = Average[4];
+    
+    BluetoothSerial.print(Map[0][0]);
+    BluetoothSerial.print(", ");
+    BluetoothSerial.println(Map[0][1]);
+    MapRowCounter++;
+    PastMapRowCounter = MapRowCounter - 1;  
     return;
   }
 
@@ -500,7 +505,7 @@ void SLAM(DIRECTION direct){
   //The mapping method for the y direction is different depending on which half of the table the robot is on, the x co-ordinate method is unaffected
   UltrasonicDifference = PastUltrasonicSLAM - UltrasonicSLAM;
   //Ultrasonic (X Direction)
-  Map[MapRowCounter][0] = Map[PastMapRowCounter][0] + UltrasonicDifference;  
+  Map[1][0] = Map[0][0] + UltrasonicDifference;  
   
   if (PastDirect == direct){
     //Robot is still in the first half of the mapping phase, calculations are done in the following code
@@ -509,24 +514,33 @@ void SLAM(DIRECTION direct){
   
     //take the previous co-ordinates and add the differences for the new map measurements. Note that the difference will already be positive or negative to account for direction travelled.
     //IR Sensor (Y Direction)
-    Map[MapRowCounter][1] = Map[PastMapRowCounter][1] + IRDifference;
+    Map[1][1] = Map[0][1] + IRDifference;
     PastDirect = direct;
   }
 
   else if (PastDirect != direct){
     //IR Difference is calculated in a different way, do not update the PastDirect value in this section so that this conditional is fufilled for the rest of the function
-    IRDifference = 120 - IRReadingSLAM; //120cm wide table, at the second half IR sensor is reading how far away it is from the 120cm mark instead of the origin.
-    Map[MapRowCounter][1] = IRDifference; 
+    IRDifference = 40 - IRReadingSLAM; //120cm wide table, at the second half IR sensor is reading how far away it is from the 120cm mark instead of the origin.
+    Map[1][1] = Map[0][1] + IRDifference; 
   }
   
-
-
-  BluetoothSerial.print(Map[MapRowCounter][0]);
+ 
+  
+  BluetoothSerial.print(Map[1][0]);
   BluetoothSerial.print(", ");
-  BluetoothSerial.println(Map[MapRowCounter][1]);
-
+  BluetoothSerial.println(Map[1][1]);
+  
+  /*
+  SerialCom->print(Map[MapRowCounter][0]);
+  SerialCom->print(", ");
+  SerialCom->println(Map[MapRowCounter][1]);
+  SerialCom->println("Test");
+  */
+  
   //Adjust Past Values for next function call
   MapRowCounter++;
+  Map[0][0]= Map[1][0];
+  Map[0][1] = Map[1][1];
   PastMapRowCounter = MapRowCounter - 1;
   PastIRReadingSLAM = IRReadingSLAM;
   PastUltrasonicSLAM = UltrasonicSLAM;
@@ -618,7 +632,8 @@ STATE running() {
     UpdateSensors(); 
   } // Update the sensor readings
   
-  FollowEdge(15, Average[2], LEFT, 2);
+  FollowEdge(15, 15, RIGHT, 2);
+  //FollowEdge(15, 15, RIGHT, 2);
   
   disable_motors();
   delay(10000);
