@@ -196,13 +196,13 @@ void RotateDeg(float deg = 0.0){
 
 void CLRotateDeg(float desiredPos){
   float pos = 0, rate, acc; //integral, val, derivative 
-  const int Kp = 0, Ki = 3, Kd = 0;
+  const int Kp = 0, Ki = 4, Kd = 0;
 
   short timeStopped = 0;
   const short deltaT = 10; //ms
-  const short toleranceSettleTime = 1000;
+  const short toleranceSettleTime = 0; //1000;
 
-  const float errorTolerance = 0; 
+  const float errorTolerance = 0.1; 
   float prevRate = 0;
   float error = desiredPos - pos;
 
@@ -211,7 +211,7 @@ void CLRotateDeg(float desiredPos){
       *effort = (*effort < 500) ? 500 : *effort;
   };
 
-  while(abs(error) > errorTolerance && timeStopped < toleranceSettleTime){
+  while(abs(error) > errorTolerance || timeStopped < toleranceSettleTime){
     rate =  GYRO_reading(); // rad/s
     acc = (rate - prevRate)*1000.0/deltaT; // rad/s^2
     pos += rate*deltaT/1000.0; // rad
@@ -220,20 +220,25 @@ void CLRotateDeg(float desiredPos){
 
     error = desiredPos - pos;
     
-    float effort = Kp*rate + Ki*pos + Kd*acc;
+    float effort = Kp*rate + Ki*error + Kd*acc;
     effort = abs(effort);
-    saturateEffort(&effort);
+
+    if(effort < 75) effort = 75; 
+    if(effort > 500) effort = 500; 
+
+    speed_val = effort;
 
     if(error > 0) cw();
     else ccw();
 
     prevRate = rate;
 
-    if(abs(error) < errorTolerance) timeStopped += deltaT;
+    if(abs(error) <= errorTolerance) timeStopped += deltaT;
     else timeStopped = 0;
 
     delay(deltaT);
   }
+
   stop();
 }
 
@@ -244,17 +249,17 @@ void LocateCorner(void) {
   int minIndex = 0; 
 
   //get distance from array with circular indices (if i > n, return value val from next rotation of array)
-  auto getDist = [&] (int i){
+  /*auto getDist = [&] (int i){
     i = i - (i%n)*n;
     return distance[i];
-  }; 
+  }; */
 
   //give ultrasonic average time to settle
   for(int i = 0; i<100; i++) UpdateSensors(); 
 
   //rotate car, populate measurement array and find min distance to wall
   for(int i = 0; i < n; i++){
-    CLRotateDeg((360/(n)));
+    CLRotateDeg((360.0/n));
     distance[i] = Average[4]; 
     minIndex = distance[i] < distance[minIndex] || distance[minIndex] == 0 ? i : minIndex;
   }
@@ -265,55 +270,34 @@ void LocateCorner(void) {
   CLRotateDeg(minIndex*(360.0/n)); 
 
   //correct if not pointing at the width (short) wall
-  if((getDist(minIndex) + getDist(minIndex + (int)(n/2))) < 
+  /*if((getDist(minIndex) + getDist(minIndex + (int)(n/2))) < 
     (getDist(minIndex + (int)(n/4)) + getDist(minIndex + (int)(3*n/4))))  
-      RotateDeg(90);
+      RotateDeg(90);*/
 }
 
-void DriveToDist(float desiredPos){
-  float integral = 0, pos, rate; //integral, val, derivative 
-  const int Kp = 0, Ki = 3, Kd = 0;
-
-  short timeStopped = 0;
-  const short deltaT = 10; //ms
-  const short toleranceSettleTime = 1000;
-
-  const float errorTolerance = 0; 
-  float prevPos = 0;
-  float error = desiredPos - pos;
-
-  auto saturateEffort =  [&] (float *effort){
-      *effort = (*effort < 75) ? 75 : *effort;
-      *effort = (*effort < 500) ? 500 : *effort;
-  };
-
-  while(abs(error) > errorTolerance && timeStopped > toleranceSettleTime){
-    pos = Average[4];
-    rate = (pos - prevPos)*1000.0/deltaT; // cm/s
-    integral += pos*deltaT/1000.0; // cm
-
-    error = desiredPos - pos;
-    
-    float effort = Kp*pos + Ki*integral + Kd*rate;
-    effort = abs(effort);
-    saturateEffort(&effort);
-
-    if(error > 0) forward;
-    else reverse;
-
-    prevPos = pos;
-
-    if(abs(error) <= errorTolerance) timeStopped += deltaT;
-    else timeStopped = 0;
-
-    delay(deltaT);
+void DriveToDist(float distance){
+  forward();
+  speed_val = 150;
+  int count  = 0;
+  float ultrasonic;
+  // Stop driving when closer than distance cm
+  while (count <= 20) {
+    ultrasonic = HC_SR04_range();
+    if (ultrasonic <= distance) {
+      count = count + 1;
+    }
   }
   stop();
 }
 
-void MoveToCorner(float distance) {
+void MoveToCorner() {
+  //give ultrasonic average time to settle
+  for(int i = 0; i<100; i++) UpdateSensors();
   DriveToDist(10);
   CLRotateDeg(90);
+
+  //give ultrasonic average time to settle
+  for(int i = 0; i<100; i++) UpdateSensors();
   DriveToDist(10);
   CLRotateDeg(90);
 }
@@ -560,8 +544,12 @@ GYRO_calibrate();
 
 
 
-CLRotateDeg(90);
-//LocateCorner();
+//CLRotateDeg(360);
+//CLRotateDeg();
+LocateCorner();
+
+delay(2000);
+//MoveToCorner();
 
   /*speed_val = speedvals[5];
   BluetoothSerial.println(speed_val);
