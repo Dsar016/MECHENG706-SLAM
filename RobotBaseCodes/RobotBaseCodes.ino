@@ -233,6 +233,47 @@ void AlignEdge(float Distance) {
   stop();
 }
 
+void DriveStraight(float ForwardDistance, bool direct) {
+  // ForwardDistance is distance from wall to drive to
+  // direct is true if forwards, false if backwards
+  float Kz = 1;
+  float Fz;
+  float Fx = 10;
+  float Fy = 0;
+  float rotation;
+  
+  for (int i = 0; i < 20; i++) {
+    UpdateSensors(); 
+  } // Update the sensor readings
+  // Average[0] is Left Mid
+  // Avergae[1] is Right Mid
+  // Average[2] is Left Long
+  // Average[3] is Right Long
+  // Average[4] is ultrasonic
+
+  if(direct == true) {
+    while(ForwardDistance <= Average[4]) { //Drive Forwards
+      UpdateSensors();
+      
+      rotation = GYRO_reading();
+      // Positive is clockwise
+      Fz = Kz * rotation; // Turning force
+      
+      //Calculate Motor Speed
+      ThetaOne = Constant * (Fx + Fy - (L + t) * Fz);
+      ThetaTwo = Constant * (Fx - Fy + (L + t) * Fz);
+      ThetaThree = Constant * (Fx - Fy - (L + t) * Fz);
+      ThetaFour = Constant * (Fx + Fy + (L + t) * Fz);
+  
+      // Calculate Motor Power
+      left_front_motor.writeMicroseconds(1500 + ThetaOne);
+      right_front_motor.writeMicroseconds(1500 - ThetaTwo);
+      left_rear_motor.writeMicroseconds(1500 + ThetaThree);
+      right_rear_motor.writeMicroseconds(1500 - ThetaFour); 
+    }
+  }
+}
+
 void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int LongOrMid) {
   //LongOrMid
   //2 = Long range sensor
