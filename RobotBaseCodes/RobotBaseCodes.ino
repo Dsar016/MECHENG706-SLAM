@@ -211,10 +211,12 @@ void CLRotateDeg(float desiredPos){
       *effort = (*effort < 500) ? 500 : *effort;
   };
 
-  while(abs(error) > errorTolerance && timeStopped > toleranceSettleTime){
+  while(abs(error) > errorTolerance && timeStopped < toleranceSettleTime){
     rate =  GYRO_reading(); // rad/s
     acc = (rate - prevRate)*1000.0/deltaT; // rad/s^2
     pos += rate*deltaT/1000.0; // rad
+
+    BluetoothSerial.print(rate);
 
     error = desiredPos - pos;
     
@@ -254,11 +256,8 @@ void LocateCorner(void) {
   for(int i = 0; i < n; i++){
     CLRotateDeg((360/(n)));
     distance[i] = Average[4]; 
-    BluetoothSerial.print('%f ,', Average[4]); 
     minIndex = distance[i] < distance[minIndex] || distance[minIndex] == 0 ? i : minIndex;
   }
-
-  BluetoothSerial.print('\n min dist at %f \176 \n\n', minIndex*(360.0/n));
 
   delay(2000);
 
