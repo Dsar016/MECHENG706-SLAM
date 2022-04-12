@@ -321,7 +321,7 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
 
   while (Average[4] >= ForwardDistance && direct == RIGHT) {
     UpdateSensors();
-    //SLAM(direct);
+    SLAM(direct);
     
     // Calculate Fz
     PreviousIRReading = CurrentIRReading;
@@ -355,7 +355,6 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
     left_rear_motor.writeMicroseconds(1500 + ThetaThree);
     right_rear_motor.writeMicroseconds(1500 - ThetaFour);
 
-    BluetoothSerial.println(CurrentIRReading);
   }
   
   stop();
