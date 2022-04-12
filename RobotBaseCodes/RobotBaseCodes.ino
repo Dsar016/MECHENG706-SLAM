@@ -241,6 +241,111 @@ void AlignEdge(float Distance) {
   stop();
 }
 
+void DriveStraight(float ForwardDistance, bool direct) {
+  // ForwardDistance is distance from wall to drive to
+  // direct is true if forwards, false if backwards
+  float Kz = 1;
+  float Fz;
+  float Fx = 7;
+  float Fy = 0;
+  float rotation;
+  float ThetaOne, ThetaTwo, ThetaThree, ThetaFour;
+  
+  //Robot Dimensions, specific measurements are shown in our notes
+  float Rw = 0.022; //Unit is metres
+  float L = 0.09; //Unit is metres
+  float t = 0.09; //Unit is metres
+  float Constant = 1 / Rw;
+  
+  for (int i = 0; i < 20; i++) {
+    UpdateSensors(); 
+  } // Update the sensor readings
+  // Average[0] is Left Mid
+  // Avergae[1] is Right Mid
+  // Average[2] is Left Long
+  // Average[3] is Right Long
+  // Average[4] is ultrasonic
+
+  if (direct == false) {
+    Fx = -Fx;
+  }
+
+    while(ForwardDistance <= Average[4]) { //Drive Forwards
+      UpdateSensors();
+      BluetoothSerial.println(Average[4]);
+      //rotation = GYRO_reading();
+      // Positive is clockwise
+      Fz = Kz * rotation; // Turning force
+
+      //Calculate Motor Speed
+      ThetaOne = Constant * (Fx + Fy - (L + t) * Fz);
+      ThetaTwo = Constant * (Fx - Fy + (L + t) * Fz);
+      ThetaThree = Constant * (Fx - Fy - (L + t) * Fz);
+      ThetaFour = Constant * (Fx + Fy + (L + t) * Fz);
+
+      BluetoothSerial.println(ThetaOne);
+      
+      // Calculate Motor Power
+      left_front_motor.writeMicroseconds(1500 + ThetaOne);
+      right_front_motor.writeMicroseconds(1500 - ThetaTwo);
+      left_rear_motor.writeMicroseconds(1500 + ThetaThree);
+      right_rear_motor.writeMicroseconds(1500 - ThetaFour); 
+    }
+}
+
+void DriveSide(DIRECTION direct, int time) {
+  float Kz = 1;
+  float Fz;
+  float Fx = 0;
+  float Fy = 5;
+  float rotation;
+  float ThetaOne, ThetaTwo, ThetaThree, ThetaFour;
+  int count = 0;
+  
+  //Robot Dimensions, specific measurements are shown in our notes
+  float Rw = 0.022; //Unit is metres
+  float L = 0.09; //Unit is metres
+  float t = 0.09; //Unit is metres
+  float Constant = 1 / Rw;
+  
+  for (int i = 0; i < 20; i++) {
+    UpdateSensors(); 
+  } // Update the sensor readings
+  // Average[0] is Left Mid
+  // Avergae[1] is Right Mid
+  // Average[2] is Left Long
+  // Average[3] is Right Long
+  // Average[4] is ultrasonic
+
+    if(direct == LEFT) {
+  Fy = -Fy;
+    }
+
+    while(count < time) { 
+      UpdateSensors();
+      
+      rotation = GYRO_reading();
+      // Positive is clockwise
+      Fz = Kz * rotation; // Turning force
+      
+      //Calculate Motor Speed
+      ThetaOne = Constant * (Fx + Fy - (L + t) * Fz);
+      ThetaTwo = Constant * (Fx - Fy + (L + t) * Fz);
+      ThetaThree = Constant * (Fx - Fy - (L + t) * Fz);
+      ThetaFour = Constant * (Fx + Fy + (L + t) * Fz);
+
+      BluetoothSerial.println(ThetaOne);
+      
+      // Calculate Motor Power
+      left_front_motor.writeMicroseconds(1500 + ThetaOne);
+      right_front_motor.writeMicroseconds(1500 - ThetaTwo);
+      left_rear_motor.writeMicroseconds(1500 + ThetaThree);
+      right_rear_motor.writeMicroseconds(1500 - ThetaFour);
+      
+      delay(10);
+      count = count + 1;
+    }
+}
 
 void GoEdge(float SideDistance, DIRECTION direct, int LongOrMid) {
   //LongOrMid
@@ -251,12 +356,11 @@ void GoEdge(float SideDistance, DIRECTION direct, int LongOrMid) {
   float Kz = 0;
   float Fx, Fy, Fz;
   float Confidence;
+  int count = 0;
 
   float Kyi = 0.01;
   float integralError = 0;
 
- 
-  
   for (int i = 0; i < 20; i++) {
     UpdateSensors(); 
   } // Update the sensor readings
@@ -282,8 +386,9 @@ void GoEdge(float SideDistance, DIRECTION direct, int LongOrMid) {
   } else {
     CurrentIRReading = Average[Right];
   }
-  
-  while (1) {
+
+  // LEFT SIDE
+  while (count < 20 && direct == LEFT) {
     UpdateSensors();
     //SLAM(direct);
     BluetoothSerial.println(CurrentIRReading);
@@ -313,7 +418,49 @@ void GoEdge(float SideDistance, DIRECTION direct, int LongOrMid) {
     right_front_motor.writeMicroseconds(1500 - ThetaTwo);
     left_rear_motor.writeMicroseconds(1500 + ThetaThree);
     right_rear_motor.writeMicroseconds(1500 - ThetaFour);
+
+    if (CurrentIRReading < SideDistance + 1 && CurrentIRReading > SideDistance - 1) {
+      count = count + 1;
+    } else {count = 0;}
   }
+
+    // RIGHT SIDE
+  while (count < 20 && direct == RIGHT) {
+    UpdateSensors();
+    //SLAM(direct);
+    BluetoothSerial.println(CurrentIRReading);
+
+    PreviousIRReading = CurrentIRReading;
+    CurrentIRReading = Average[Right];
+
+    if ((SideDistance - CurrentIRReading) > 2) {
+      integralError = 0;
+    }
+    else {
+      integralError = integralError + (SideDistance - CurrentIRReading);
+    }   
+    
+    Fy = -(Ky * (SideDistance - CurrentIRReading) + Kyi * integralError);
+    Fz = 0;
+    Fx = 0;
+    
+    //Calculate Motor Speed
+    ThetaOne = Constant * (Fx + Fy - (L + t) * Fz);
+    ThetaTwo = Constant * (Fx - Fy + (L + t) * Fz);
+    ThetaThree = Constant * (Fx - Fy - (L + t) * Fz);
+    ThetaFour = Constant * (Fx + Fy + (L + t) * Fz);
+
+    // Calculate Motor Power
+    left_front_motor.writeMicroseconds(1500 + ThetaOne);
+    right_front_motor.writeMicroseconds(1500 - ThetaTwo);
+    left_rear_motor.writeMicroseconds(1500 + ThetaThree);
+    right_rear_motor.writeMicroseconds(1500 - ThetaFour);
+
+    if (CurrentIRReading < SideDistance + 1 && CurrentIRReading > SideDistance - 1) {
+      count = count + 1;
+    } else {count = 0;}
+  }
+  
 }
 
 void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int LongOrMid) {
@@ -484,6 +631,46 @@ float FindCloseEdge(void) {
     return - Right_Reading;
   }
 }
+
+#ifndef NO_READ_GYRO
+float gyroSupplyVoltage = 5;  
+float gyroZeroVoltage = 0;   
+
+float gyroSensitivity = 0.0065;// 0.007 + 0.007*0.04;       
+float rotationThreshold = 1.5;  
+
+float currentAngle = 0;
+
+bool GYRO_calibrate(){
+  float sum = 0;
+  int n = 100; //number of measurements 
+
+  for(int i = 0; i < n; i++){
+    sum += gyroSupplyVoltage*(analogRead(GYRO_PIN)/1023.0);
+  }
+
+  gyroZeroVoltage = sum/n; 
+
+  return true;
+}
+
+
+float prevAngularVelocity = 0;
+
+float GYRO_reading()
+{
+  
+  float gyroRate = (analogRead(GYRO_PIN)/1023.0)*gyroSupplyVoltage - gyroZeroVoltage;
+  float angularVelocity = gyroRate/gyroSensitivity;
+
+  angularVelocity = angularVelocity>rotationThreshold ? angularVelocity : 0;
+  //angularVelocity = KalmanFilter(angularVelocity, prevAngularVelocity);
+
+  prevAngularVelocity = angularVelocity; 
+  return angularVelocity;
+  
+}
+#endif
 
 ////////////////// SENSOR FUNCTIONS /////////////////////////////////
 double KalmanFilter(double rawdata, double prev_est){
@@ -743,8 +930,11 @@ STATE running() {
     UpdateSensors(); 
   } // Update the sensor readings
   
-  FollowEdge(15, 15, LEFT, 2);
+  GYRO_calibrate();
   //FollowEdge(15, 15, RIGHT, 2);
+  DriveStraight(30,true);
+  DriveSide(RIGHT, 300);
+  DriveStraight(80,false);
   
   disable_motors();
   delay(10000);
@@ -989,13 +1179,6 @@ void IR_reading(IR_SENSOR sensor)
 }
 #endif
 
-#ifndef NO_READ_GYRO
-void GYRO_reading()
-{
-  SerialCom->print("GYRO A3:");
-  SerialCom->println(analogRead(GYRO_PIN));
-}
-#endif
 
 //Serial command pasing
 void read_serial_command()
