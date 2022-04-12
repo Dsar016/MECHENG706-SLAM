@@ -246,11 +246,14 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
   //LongOrMid
   //2 = Long range sensor
   //0 = Mid range sensor
-  float Kx = 0.5;
-  float Ky = 0.5;
-  float Kz = 50;
+  float Kx = 0;//0.5;
+  float Ky = 0.75;
+  float Kz = 0;//50;
   float Fx, Fy, Fz;
   float Confidence;
+
+  float Kyi = 0.02;
+  float integralError = 0;
 
  
   
@@ -282,12 +285,20 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
   
   while (Average[4] >= ForwardDistance && direct == LEFT) {
     UpdateSensors();
-    SLAM(direct);
+    //SLAM(direct);
+    BluetoothSerial.println(CurrentIRReading);
 
     PreviousIRReading = CurrentIRReading;
     CurrentIRReading = Average[Left];
 
-    Fy = Ky * (SideDistance - CurrentIRReading);
+    if ((SideDistance - CurrentIRReading) > 2) {
+      integralError = 0;
+    }
+    else {
+      integralError = integralError + (SideDistance - CurrentIRReading);
+    }   
+    
+    Fy = Ky * (SideDistance - CurrentIRReading) + Kyi * integralError;
     
     if ((CurrentIRReading - PreviousIRReading > 0) && (SideDistance - CurrentIRReading > 0)) { // Gap is growing and above goal
       Fz = 0;
@@ -321,7 +332,8 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
 
   while (Average[4] >= ForwardDistance && direct == RIGHT) {
     UpdateSensors();
-    SLAM(direct);
+    //SLAM(direct);
+    BluetoothSerial.println(CurrentIRReading);
     
     // Calculate Fz
     PreviousIRReading = CurrentIRReading;
@@ -354,7 +366,7 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
     right_front_motor.writeMicroseconds(1500 - ThetaTwo);
     left_rear_motor.writeMicroseconds(1500 + ThetaThree);
     right_rear_motor.writeMicroseconds(1500 - ThetaFour);
-
+    
   }
   
   stop();
@@ -634,7 +646,7 @@ STATE running() {
     UpdateSensors(); 
   } // Update the sensor readings
   
-  FollowEdge(15, 19, RIGHT, 2);
+  FollowEdge(15, 15, LEFT, 2);
   //FollowEdge(15, 15, RIGHT, 2);
   
   disable_motors();
