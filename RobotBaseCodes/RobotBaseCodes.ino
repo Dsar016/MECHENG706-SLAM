@@ -242,21 +242,93 @@ void AlignEdge(float Distance) {
 }
 
 
-void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int LongOrMid) {
+void GoEdge(float SideDistance, DIRECTION direct, int LongOrMid) {
   //LongOrMid
   //2 = Long range sensor
   //0 = Mid range sensor
-  float Kx = 0;//0.5;
+  float Kx = 0;
   float Ky = 0.75;
-  float Kz = 0;//50;
+  float Kz = 0;
   float Fx, Fy, Fz;
   float Confidence;
 
-  float Kyi = 0.02;
+  float Kyi = 0.01;
   float integralError = 0;
 
  
   
+  for (int i = 0; i < 20; i++) {
+    UpdateSensors(); 
+  } // Update the sensor readings
+  // Average[0] is Left Mid
+  // Avergae[1] is Right Mid
+  // Average[2] is Left Long
+  // Average[3] is Right Long
+  // Average[4] is ultrasonic
+  int Left = 0 + LongOrMid;
+  int Right = 1 + LongOrMid;
+
+  //Robot Dimensions, specific measurements are shown in our notes
+  float Rw = 0.022; //Unit is metres
+  float L = 0.09; //Unit is metres
+  float t = 0.09; //Unit is metres
+  float Constant = 1 / Rw;
+
+  float ThetaOne, ThetaTwo, ThetaThree, ThetaFour;
+
+  float CurrentIRReading, PreviousIRReading;
+  if (direct == LEFT) {
+    CurrentIRReading = Average[Left];
+  } else {
+    CurrentIRReading = Average[Right];
+  }
+  
+  while (1) {
+    UpdateSensors();
+    //SLAM(direct);
+    BluetoothSerial.println(CurrentIRReading);
+
+    PreviousIRReading = CurrentIRReading;
+    CurrentIRReading = Average[Left];
+
+    if ((SideDistance - CurrentIRReading) > 2) {
+      integralError = 0;
+    }
+    else {
+      integralError = integralError + (SideDistance - CurrentIRReading);
+    }   
+    
+    Fy = Ky * (SideDistance - CurrentIRReading) + Kyi * integralError;
+    Fz = 0;
+    Fx = 0;
+    
+    //Calculate Motor Speed
+    ThetaOne = Constant * (Fx + Fy - (L + t) * Fz);
+    ThetaTwo = Constant * (Fx - Fy + (L + t) * Fz);
+    ThetaThree = Constant * (Fx - Fy - (L + t) * Fz);
+    ThetaFour = Constant * (Fx + Fy + (L + t) * Fz);
+
+    // Calculate Motor Power
+    left_front_motor.writeMicroseconds(1500 + ThetaOne);
+    right_front_motor.writeMicroseconds(1500 - ThetaTwo);
+    left_rear_motor.writeMicroseconds(1500 + ThetaThree);
+    right_rear_motor.writeMicroseconds(1500 - ThetaFour);
+  }
+}
+
+void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int LongOrMid) {
+  //LongOrMid
+  //2 = Long range sensor
+  //0 = Mid range sensor
+  float Kx = 0.5;
+  float Ky = 0.75;
+  float Kz = 50;
+  float Fx, Fy, Fz;
+  float Confidence;
+
+  float Kyi = 0.01;
+  float integralError = 0;
+
   for (int i = 0; i < 20; i++) {
     UpdateSensors(); 
   } // Update the sensor readings
@@ -291,7 +363,7 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
     PreviousIRReading = CurrentIRReading;
     CurrentIRReading = Average[Left];
 
-    if ((SideDistance - CurrentIRReading) > 2) {
+    if ((SideDistance - CurrentIRReading) > 3) {
       integralError = 0;
     }
     else {
@@ -338,6 +410,13 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
     // Calculate Fz
     PreviousIRReading = CurrentIRReading;
     CurrentIRReading = Average[Right];
+
+    if ((SideDistance - CurrentIRReading) > 3) {
+      integralError = 0;
+    } else {
+      integralError = integralError + (SideDistance - CurrentIRReading);
+    }   
+    
     if (CurrentIRReading - PreviousIRReading > 0 && SideDistance - CurrentIRReading > 0) { // Gap is growing and above goal
       Fz = 0;
     }
@@ -351,9 +430,9 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
       Fz = 0;
     }
     
-    Fy = -Ky * (SideDistance - CurrentIRReading);
+    Fy = -(Ky * (SideDistance - CurrentIRReading) + Kyi * integralError);
 
-    Fx = Kx / (abs((CurrentIRReading - PreviousIRReading) * (SideDistance - CurrentIRReading)) + 0.01);
+    Fx = 50 + (Kx / (abs((CurrentIRReading - PreviousIRReading) * (SideDistance - CurrentIRReading)) + 0.01));
     
     //Calculate Motor Speed
     ThetaOne = Constant * (Fx + Fy - (L + t) * Fz);
@@ -475,6 +554,24 @@ void UpdateSensors() {
   oldIR[3][timer2i] = CurrentIR[3];
   oldIR[4][timer2i] = CurrentIR[4];
   
+  timer2i = (timer2i+1)%10;
+}
+
+void UpdateUltra() {
+ // Find current sensor reading
+  CurrentIR[4] = HC_SR04_range();
+  
+  double total;
+  // Find average reading from past 10 readings
+  total = 0;
+  for (int m = 0; m < 10; m++) {
+    total = oldIR[4][m] + total;
+  }
+  
+  Average[4] = total/10;
+
+  // Add current reading to old readings
+  oldIR[4][timer2i] = CurrentIR[4]; 
   timer2i = (timer2i+1)%10;
 }
 
