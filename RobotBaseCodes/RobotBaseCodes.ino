@@ -644,22 +644,22 @@ void DriveStraight(float ForwardDistance, bool direct) {
   }
 
     while(ForwardDistance <= Average[4]) { //Drive Forwards
-      if (timee < 1000) { // Ramp up the power from 0 to 100
+      if (timee <= 1000) { // Ramp up the power from 0 to 100
       timee = timee + 1;
       timeEffect = timee/1000;
       }
       UpdateSensors();
-      BluetoothSerial.println(Average[4]);
       rotation = GYRO_reading();
       // Positive is clockwise
       Fz = Kz * rotation + 0.02; // Turning force
-      BluetoothSerial.println(Fz);
+
+      BluetoothSerial.println(ThetaOne);
 
       //Calculate Motor Speed
-      ThetaOne = Constant * (Fx + Fy - (L + t) * Fz);
-      ThetaTwo = Constant * (Fx - Fy + (L + t) * Fz);
-      ThetaThree = Constant * (Fx - Fy - (L + t) * Fz);
-      ThetaFour = Constant * (Fx + Fy + (L + t) * Fz);
+      ThetaOne = timeEffect * Constant * (Fx + Fy - (L + t) * Fz);
+      ThetaTwo = timeEffect * Constant * (Fx - Fy + (L + t) * Fz);
+      ThetaThree = timeEffect * Constant * (Fx - Fy - (L + t) * Fz);
+      ThetaFour = timeEffect * Constant * (Fx + Fy + (L + t) * Fz);
       
       // Calculate Motor Power
       left_front_motor.writeMicroseconds(1500 + ThetaOne);
@@ -1289,7 +1289,7 @@ STATE running() {
  // Average[2] is Left Long
  // Average[3] is Right Long
  GYRO_calibrate();
- 
+ /*
  FollowEdge(15, 6.8, LEFT, 0); //Second input is side distance
  DriveSide(RIGHT, 50); //Change second input to change how long it shifts for 
  DriveStraight(180, false); //False means drive backwards
@@ -1310,6 +1310,8 @@ STATE running() {
   }      
  }
 FollowEdge(20, 6.8, LEFT, 0); //Second input is side distance
+*/DriveStraight(20, true); //False means drive backwards
+
  
 }
 
