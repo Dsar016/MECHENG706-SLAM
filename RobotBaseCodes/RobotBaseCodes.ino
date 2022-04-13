@@ -255,7 +255,7 @@ void LocateCorner2(){
   while(error > errorTolerance){
     float v = GYRO_reading();
     deltaT = (millis() - deltaT);
-    degDriven += v*(deltaT-0.5)/1000.0;
+    degDriven += v*(deltaT-0.6)/1000.0;
 
     deltaT = millis();
     error = degDesired - degDriven;
@@ -356,7 +356,7 @@ void LocateCorner2(){
 void CLRotateDeg(float degDesired){
   double degDriven = 0; 
 
-  const int Kp = 3, Ki = 0, Kd = 0;
+  const int Kp = 4, Ki = 0, Kd = 0;
 
   const float errorTolerance = 0; 
   float prevError = 0, error = degDesired - degDriven;
@@ -368,7 +368,7 @@ void CLRotateDeg(float degDesired){
     float v = GYRO_reading();
 
     deltaT = millis() - deltaT;
-    degDriven += v*(deltaT-0.5)/1000.0;
+    degDriven += v*(deltaT-0.6)/1000.0;
     deltaT = millis();
 
     error = degDesired - degDriven;
@@ -409,7 +409,7 @@ void DriveToDist(float distance){
 
 void MoveToCorner() {
   //give ultrasonic average time to settle
-  for(int i = 0; i<100; i++) UpdateSensors();
+  for(int i = 0; i<50; i++) UpdateSensors();
   DriveStraight(10, true);
   CLRotateDeg(90);
 }
@@ -445,7 +445,7 @@ void DriveStraight(float ForwardDistance, bool direct) {
     Fx = -Fx;
     while(ForwardDistance >= Average[4]) { //Drive Backwards
       
-      if (timee <= 500) { // Ramp up the power from 0 to 100
+      if (timee <= 250) { // Ramp up the power from 0 to 100
       timee = timee + 1;
       timeEffect = timee/500;
       }
@@ -471,7 +471,7 @@ void DriveStraight(float ForwardDistance, bool direct) {
 
   else {
     while(ForwardDistance <= Average[4]) { //Drive Forwards
-      if (timee <= 500) { // Ramp up the power from 0 to 100
+      if (timee <= 250) { // Ramp up the power from 0 to 100
       timee = timee + 1;
       timeEffect = timee/500;
       }
@@ -1117,10 +1117,13 @@ STATE running() {
  // Average[2] is Left Long
  // Average[3] is Right Long
  GYRO_calibrate();
- 
+
+ //BluetoothSerial.println("GO ROBOT GO");
+
+
  /////////////////////////////////////////////FIND CORNER/////////
   LocateCorner2();
-  delay(2000);
+  delay(500);
 
   //////////////////////////
 
