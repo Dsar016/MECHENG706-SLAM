@@ -219,15 +219,101 @@ void UpdateUltra() {
   timer2i = (timer2i+1)%10;
 }
 
-void RotateToMinDist(float d, float minAngle){
-  const float errorTolerance = 5; 
-  float error = d-HC_SR04_range();
+void RotateToMinDist(){
+  CLRotateDeg(-30);
+  float degDesired = 60.0f;
+
+  float distances[200];
+  float angles[200] = {0};
+
+  float degDriven = 0; 
+
+  const int Kp = 4, Ki = 0, Kd = 0;
+
+  const float errorTolerance = 0; 
+  float error = degDesired - degDriven;
+
+  int msCount = 0;
+  int i;
+
+  float prevAngle = 0; 
+
+  for(i = 0; i < 20; i++) distances[i] = HC_SR04_range();
+  
+  int deltaT = millis();
   while(error > errorTolerance){
-    speed_val = 100;
-    if(minAngle > 0) cw();
+    float v = GYRO_reading();
+    deltaT = (millis() - deltaT);
+    degDriven += v*(deltaT-0.6)/1000.0;
+
+    deltaT = millis();
+    error = degDesired - degDriven;
+
+    float effort = abs(Kp*error);
+  
+    
+    if(effort < 80) effort = 80; 
+    if(effort > 200) effort = 200; 
+
+    speed_val = abs(effort); 
+
+    if(error > 0) cw();
     else ccw();
+
+    msCount+= 10;
+    if(msCount == 20){
+      msCount = 0;
+      distances[i] = HC_SR04_range();
+      angles[i] = KalmanFilter(degDriven, prevAngle);
+      prevAngle = degDriven;
+      i++;
+    }
+
+    delay(10);
   }
   stop();
+
+  for(int j = 2; j < i-2; j++){
+    if(distances[j] == 0){
+      int sum = distances[j-1] + distances[j-2] + distances[j+1] + distances[j+2];
+      distances[j] = sum/4;
+    }
+  }
+
+  for(int j = 5; j < i-5; j++){
+    float sum = 0;
+    for(int k = -5; k < 5; k++){
+      sum += distances[j+k];
+    }
+    distances[j] = sum/10;
+  }
+
+  for(int j = 1; j < i; j++){
+    //angles[j] = kalmanfilter
+  }
+
+  BluetoothSerial.println(i);
+
+  int minIndex = 10;
+  for(int j = 10; j < i; j++){
+    BluetoothSerial.print(distances[j]);
+    BluetoothSerial.print(", ");
+    BluetoothSerial.println(angles[j]);
+    minIndex = (distances[j] < distances[minIndex] && distances[j] != 0) || distances[minIndex] == 0 ? j : minIndex;
+  }
+
+  float newAngle = angles[minIndex] - 60;
+  
+  //if(newAngle > 180) newAngle -= 360;
+
+  BluetoothSerial.print("Min Angle: ");
+  BluetoothSerial.print(newAngle);
+  BluetoothSerial.print(" at ");
+  BluetoothSerial.print(distances[minIndex]);
+
+  delay(500);
+
+  CLRotateDeg(newAngle);
 }
 
 void LocateCorner2(){
@@ -236,7 +322,6 @@ void LocateCorner2(){
   float distances[200];
   float angles[200] = {0};
 
-  float desiredPos = 360;
   float degDriven = 0; 
 
   const int Kp = 4, Ki = 0, Kd = 0;
@@ -1119,10 +1204,10 @@ STATE running() {
  GYRO_calibrate();
 
  //BluetoothSerial.println("GO ROBOT GO");
-
-
+  RotateToMinDist(); 
+  delay(5000);
  /////////////////////////////////////////////FIND CORNER/////////
-  LocateCorner2();
+ // LocateCorner2();
   delay(500);
 
   //////////////////////////
