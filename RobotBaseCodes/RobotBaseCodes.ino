@@ -818,7 +818,7 @@ void GoEdge(float SideDistance, DIRECTION direct, int LongOrMid) {
   while (count < 20 && direct == LEFT) {
     UpdateSensors();
     SLAM(SLAMdirect);
-    BluetoothSerial.println(CurrentIRReading);
+    //BluetoothSerial.println(CurrentIRReading);
 
     PreviousIRReading = CurrentIRReading;
     CurrentIRReading = Average[Left];
@@ -1311,44 +1311,9 @@ STATE running() {
  // Average[2] is Left Long
  // Average[3] is Right Long
  GYRO_calibrate();
- /////////////////////////////////////////////FIND SHORTEST WALL/////////
+ /////////////////////////////////////////////FIND CORNER/////////
 
 
-
-
- ///////////////////////////////////////////////////////////////
- 
- UpdateSensors();
- /*LocateCorner2();
-
-  for (int i = 0; i < 10; i++) {
-    UpdateSensors(); 
-  }
-
-  if (Average[4] < 130) {
-    //Looking at corner, drive to it
-     FollowEdge(15, Average[2], LEFT, 2);
-     CLRotateDeg(90);
-  }
-  *////////////
-  /*
- cw();
- for (int i = 0; i < 10; i++) {
-    UpdateSensors(); 
-  }
-  float oldUltra = Average[4];
-  
- while(Average[4] - oldUltra <= 0) {
-  UpdateSensors();
-  oldUltra = Average[4];
- }
- stop();
- CLRotateDeg(90);
- DriveStraight(20, true);
- CLRotateDeg(90);
- delay(10000);
- 
-*/
   //////////////////////////
 
 
@@ -1379,9 +1344,10 @@ STATE running() {
  }
 
    GoEdge(15, RIGHT, 2);
-   GoEdge(6.8, RIGHT, 0);
    FollowEdge(20, 6.8, RIGHT, 0); //Second input is side distance
    disable_motors();
+   delay(50000);
+
    
 }
 
