@@ -692,6 +692,7 @@ void DriveSide(DIRECTION direct, int time) {
   float rotation;
   float ThetaOne, ThetaTwo, ThetaThree, ThetaFour;
   int count = 0;
+  int timee = 1000;
   
   //Robot Dimensions, specific measurements are shown in our notes
   float Rw = 0.022; //Unit is metres
@@ -724,8 +725,6 @@ void DriveSide(DIRECTION direct, int time) {
       ThetaTwo = Constant * (Fx - Fy + (L + t) * Fz);
       ThetaThree = Constant * (Fx - Fy - (L + t) * Fz);
       ThetaFour = Constant * (Fx + Fy + (L + t) * Fz);
-
-      BluetoothSerial.println(ThetaOne);
       
       // Calculate Motor Power
       left_front_motor.writeMicroseconds(1500 + ThetaOne);
@@ -736,6 +735,21 @@ void DriveSide(DIRECTION direct, int time) {
       delay(10);
       count = count + 1;
     }
+    
+    while(timee >= 0) {
+    ThetaOne = ThetaOne * timee / 1000;
+    ThetaTwo = ThetaTwo * timee / 1000;
+    ThetaThree = ThetaThree * timee / 1000;
+    ThetaFour = ThetaFour * timee / 1000;
+
+    // Calculate Motor Power
+    left_front_motor.writeMicroseconds(1500 + ThetaOne);
+    right_front_motor.writeMicroseconds(1500 - ThetaTwo);
+    left_rear_motor.writeMicroseconds(1500 + ThetaThree);
+    right_rear_motor.writeMicroseconds(1500 - ThetaFour);
+    timee = timee - 1;
+  }
+  stop();
 }
 
 void GoEdge(float SideDistance, DIRECTION direct, int LongOrMid) {
@@ -820,7 +834,6 @@ void GoEdge(float SideDistance, DIRECTION direct, int LongOrMid) {
   while (count < 20 && direct == RIGHT) {
     UpdateSensors();
     //SLAM(direct);
-    BluetoothSerial.println(CurrentIRReading);
 
     PreviousIRReading = CurrentIRReading;
     CurrentIRReading = Average[Right];
@@ -1273,30 +1286,31 @@ STATE running() {
   }
 
   // PROTOTYPE 1 //////////////////////
-  /*double dist;
+ // Average[2] is Left Long
+ // Average[3] is Right Long
+ GYRO_calibrate();
+ 
+ FollowEdge(15, 6.8, LEFT, 0); //Second input is side distance
+ DriveSide(RIGHT, 50); //Change second input to change how long it shifts for 
+ DriveStraight(180, false); //False means drive backwards
+ DriveSide(RIGHT, 50); //Change second input to change how long it shifts for 
+
+ for (int i = 0; i < 10; i++) {
+    UpdateSensors(); 
+  }
   
-  LocateCorner();
-  MoveToCorner();
-  AlignEdge();
-  FollowEdge(15, LEFT);
-  DIRECTION direct = RIGHT;
-  DIRECTION follow_edge;
-  while(0) { // distance read in direct direction < 15
-    Shift(direct);
-    Rotate180();
-    dist = FindCloseEdge();
-    if(dist > 0) {
-      follow_edge = LEFT;
-    } else {
-      follow_edge = RIGHT;
-    }
-    FollowEdge(abs(dist), follow_edge);
-    
-    if(direct = LEFT) {
-      direct = RIGHT;
-    } else {
-      direct = LEFT;
-    }*/
+ while(Average[3] <= 30){
+    DriveStraight(20, true); //False means drive backwards
+    DriveSide(RIGHT, 50); //Change second input to change how long it shifts for 
+    DriveStraight(180, false); //False means drive backwards
+    DriveSide(RIGHT, 50); //Change second input to change how long it shifts for 
+
+    for (int i = 0; i < 10; i++) {
+    UpdateSensors(); 
+  }      
+ }
+FollowEdge(20, 6.8, LEFT, 0); //Second input is side distance
+ 
 }
 
 //Stop of Lipo Battery voltage is too low, to protect Battery
