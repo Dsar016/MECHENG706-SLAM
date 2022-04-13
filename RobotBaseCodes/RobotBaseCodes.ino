@@ -247,6 +247,8 @@ void LocateCorner2(){
   int msCount = 0;
   int i;
 
+  float prevAngle = 0; 
+
   for(i = 0; i < 10; i++) distances[i] = HC_SR04_range();
   
   int deltaT = millis();
@@ -262,7 +264,7 @@ void LocateCorner2(){
   
     
     if(effort < 80) effort = 80; 
-    if(effort > 300) effort = 300; 
+    if(effort > 200) effort = 200; 
 
     speed_val = abs(effort); 
 
@@ -273,7 +275,8 @@ void LocateCorner2(){
     if(msCount == 50){
       msCount = 0;
       distances[i] = HC_SR04_range();
-      angles[i] = degDriven;
+      angles[i] = KalmanFilter(degDriven, prevAngle);
+      prevAngle = degDriven;
       i++;
     }
 
@@ -281,10 +284,10 @@ void LocateCorner2(){
   }
   stop();
 
-  for(int j = 1; j < i-1; j++){
+  for(int j = 2; j < i-2; j++){
     if(distances[j] == 0){
-      int sum = distances[j-1] + distances[j+1];
-      distances[j] = sum/2;
+      int sum = distances[j-1] + distances[j-2] + distances[j+1] + distances[j+2];
+      distances[j] = sum/4;
     }
   }
 
@@ -296,17 +299,13 @@ void LocateCorner2(){
     distances[j] = sum/10;
   }
 
-  for(int j = 2; j < i-2; j++){
-    float sum = 0;
-    for(int k = -2; k < 2; k++){
-      sum += angles[j+k];
-    }
-    angles[j] = sum/4;
+  for(int j = 1; j < i; j++){
+    //angles[j] = kalmanfilter
   }
 
   BluetoothSerial.println(i);
 
-  int minIndex = 0;
+  int minIndex = 10;
   for(int j = 10; j < i; j++){
     BluetoothSerial.print(distances[j]);
     BluetoothSerial.print(", ");
@@ -316,91 +315,42 @@ void LocateCorner2(){
 
   float newAngle = angles[minIndex];
   
-  //if(newAngle > 180) newAngle -= 360;
+  if(newAngle > 180) newAngle -= 360;
 
   BluetoothSerial.print("Min Angle: ");
   BluetoothSerial.print(newAngle);
   BluetoothSerial.print(" at ");
   BluetoothSerial.print(distances[minIndex]);
 
-  delay(6000);
+  delay(500);
 
   CLRotateDeg(newAngle);
-  //RotateToMinDist(distances[minIndex], newAngle);
+
+  delay(500);
+
+  float oppositeAngle = (newAngle + 180.0);
+
+  BluetoothSerial.print("| Op Real Angle: ");
+  int j;
+  for(j = 10; j < i; j++){
+    if(angles[j] > oppositeAngle) break;
+  }
+  //BluetoothSerial.print(angles[j]);
+
+  float crossdist = distances[j] + distances[minIndex];
+
+  //BluetoothSerial.print(" | Cross Dist: ");
+  //BluetoothSerial.print(crossdist);
+
+  delay(500); 
+  
+  if(crossdist < 140){
+    CLRotateDeg(90);
+  }
+  
+  MoveToCorner();
   MoveToCorner();
 
-  
-
-/*
-  float pos = 0, rate, acc; //integral, val, derivative 
-  const int Kp = 0, Ki = 3, Kd = 0;
-
-  short timeStopped = 0;
-  const short deltaT = 10; //ms
-  const short toleranceSettleTime = 1000; //1000;
-
-  const float errorTolerance = 1; 
-  float prevRate = 0;
-  float error = desiredPos - pos;
-
-  auto saturateEffort =  [&] (float *effort){
-      *effort = (*effort < 75) ? 75 : *effort;
-      *effort = (*effort < 100) ? 100 : *effort;
-  };
-
-  int msCount = 0;
-  int i = 0;
-
-  for(int j = 0; j<100; j++) UpdateSensors(); 
-
-  int minIndex = 0;
-
-  while(abs(error) > errorTolerance || timeStopped < toleranceSettleTime){
-    rate =  GYRO_reading(); // rad/s
-    //acc = (rate - prevRate)*1000.0/deltaT; // rad/s^2
-    pos += rate*deltaT/1000.0; // rad
-
-    error = desiredPos - pos;
-    
-    float effort = Ki*error;//Kp*rate + Ki*error + Kd*acc;
-    effort = abs(effort);
-
-    if(effort < 75) effort = 75; 
-    if(effort > 100) effort = 100; 
-
-    speed_val = effort;
-
-    if(error > 0) cw();
-    else ccw();
-
-    prevRate = rate;
-
-    if(abs(error) <= errorTolerance) timeStopped += deltaT;
-    else timeStopped = 0;
-
-    
-
-
-    //UpdateSensors();
-    msCount += deltaT;
-    if(msCount == 200){
-      msCount = 0;
-      distances[i] = HC_SR04_range();
-      angles[i] = pos;
-      i++;
-
-      //minIndex = (distances[i] < distances[minIndex] && distances[i] != 0) || distances[minIndex] == 0 ? i : minIndex;
-    }
-    BluetoothSerial.println(error);
-
-    delay(deltaT);
-  }
-  BluetoothSerial.print("stopped");
-  stop();
-  delay(2000);
-
-  //CLRotateDeg(angles[minIndex]);
-  */
 }
 
 void CLRotateDeg(float degDesired){
@@ -412,8 +362,9 @@ void CLRotateDeg(float degDesired){
   float prevError = 0, error = degDesired - degDriven;
 
   int deltaT = millis(); //ms
+  const int direct = degDesired/abs(degDesired);
 
-  while(error > errorTolerance){
+  while(error*direct  > errorTolerance){
     float v = GYRO_reading();
 
     deltaT = millis() - deltaT;
@@ -422,25 +373,15 @@ void CLRotateDeg(float degDesired){
 
     error = degDesired - degDriven;
 
-    //float rateDerivative = (error - prevError)*1000.0/deltaT;
+    float effort = abs(Kp*error);
 
-    float effort = Kp*error;
+    if(effort < 80) effort = 80; 
+    if(effort > 300) effort = 300; 
 
-    if(abs(effort) < 75){
-      if(effort > 0) effort = 75;
-      else effort = -75;
-    }
+    speed_val = effort; 
 
-    if(effort > 500) effort = 500; 
-    if(effort < -500) effort = -500;
-
-    speed_val = abs(effort); 
-
-    if(effort > 0) cw();
+    if(direct > 0) cw();
     else ccw();
-
-
-    //BluetoothSerial.println(v);
 
     prevError = error;
 
@@ -448,152 +389,12 @@ void CLRotateDeg(float degDesired){
   }
 
   stop();
-
-  /*float pos = 0, rate, acc; //integral, val, derivative 
-  const int Kp = 0, Ki = 10, Kd = 0;
-
-  short timeStopped = 0;
-  const short deltaT = 10; //ms
-  const short toleranceSettleTime = 0.1; //1000;
-
-  const float errorTolerance = 0.1; 
-  float prevRate = 0;
-  float error = desiredPos - pos;
-
-  auto saturateEffort =  [&] (float *effort){
-      *effort = (*effort < 75) ? 75 : *effort;
-      *effort = (*effort < 500) ? 500 : *effort;
-  };
-
-  while(error > 0){ //abs(error) > errorTolerance || timeStopped < toleranceSettleTime){
-    rate =  GYRO_reading(); // rad/s
-    acc = (rate - prevRate)*1000.0/deltaT; // rad/s^2
-    pos += rate*deltaT/1000.0; // rad
-
-    error = desiredPos - pos;
-    
-    float effort = Kp*rate + Ki*error + Kd*acc;
-    effort = abs(effort);
-
-    if(effort < 75) effort = 75; 
-    if(effort > 500) effort = 500; 
-
-    speed_val = effort;
-
-    if(error > 0) cw();
-    else ccw();
-
-    prevRate = rate;
-
-    if(abs(error) <= errorTolerance) timeStopped += deltaT;
-    else timeStopped = 0;
-
-    delay(deltaT);
-  }
-
-  stop();*/
 }
 
-void LocateCorner(void) {
-
-  const short n = 72; //division of measurement circle (n measurements for 360deg). most accurate as large multiple of 4
-  float distance[n];
-  int minIndex = 0; 
-
-  //not used, keep just in case this method doesnt work
-  // auto approxEquals = [] (float a, float b, int tolerance){
-  //   if(a >= (b - tolerance) && a <= (b+tolerance)) return true;
-  //   return false;
-  // };
-
-  //get distance from array with circular indices (if i > n, return value val from next rotation of array)
-  auto getDist = [&] (int i){
-    i = i - (i%n)*n;
-    return distance[i];
-  };
-
-  BluetoothSerial.println(); 
-  BluetoothSerial.println(); 
-  //rotate car, populate measurement array and find min distance to wall
-
-  for(int i = 0; i<100; i++)   UpdateSensors();
-
-  for(int i = 0; i < n; i++){
-    CLRotateDeg((360/(n)));
-   // UpdateSensors();
-    distance[i] = HC_SR04_range();
-    ////BluetoothSerial.print(Average[4]); 
-    //BluetoothSerial.print(", "); 
-    //minIndex = distance[i] < distance[minIndex] || distance[minIndex] == 0 ? i : minIndex;
-  }
-
-
-
-  /*delay(100000000);
-  for(int i = 0; i < n; i++){
-    BluetoothSerial.print(distance[i]); 
-    BluetoothSerial.print(", "); 
-  }*/
-
-  /*BluetoothSerial.println();
-  BluetoothSerial.print("Min Dist: "); 
-  BluetoothSerial.print(distance[minIndex]); 
-  BluetoothSerial.print(" at "); 
-  BluetoothSerial.print(minIndex); 
-  BluetoothSerial.print(" / "); 
-  BluetoothSerial.print(minIndex*(360.0/n)); 
-  BluetoothSerial.print(" deg "); */
-
-  delay(2000);
-  
-
-  //rotate to minimum dist to wall
-  CLRotateDeg(minIndex*(360.0/n)); 
-  BluetoothSerial.println("rotated"); 
-
-  //correct if not pointing at the width (short) wall
-  /*if((getDist(minIndex) + getDist(minIndex + (int)(n/2))) < 
-    (getDist(minIndex + (int)(n/4)) + getDist(minIndex + (int)(3*n/4))))  
-      RotateDeg(90);
-  */
-
-
-  // const short n = 72; //division of measurement circle (n measurements for 360deg). most accurate as large multiple of 4
-  // float distance[n];
-  // int minIndex = 0; 
-
-  // //get distance from array with circular indices (if i > n, return value val from next rotation of array)
-  // /*auto getDist = [&] (int i){
-  //   i = i - (i%n)*n;
-  //   return distance[i];
-  // }; */
-
-  // //give ultrasonic average time to settle
-  // for(int i = 0; i<100; i++) UpdateSensors(); 
-
-  // //rotate car, populate measurement array and find min distance to wall
-  // for(int i = 0; i < n; i++){
-  //   CLRotateDeg((360.0/n));
-  //   UpdateSensors();
-  //   distance[i] = Average[4]; 
-  //   minIndex = distance[i] < distance[minIndex] || distance[minIndex] == 0 ? i : minIndex;
-    
-  // }
-
-  // delay(2000);
-
-  // //rotate to minimum dist to wall
-  // CLRotateDeg(minIndex*(360.0/n)); 
-
-  // //correct if not pointing at the width (short) wall
-  // /*if((getDist(minIndex) + getDist(minIndex + (int)(n/2))) < 
-  //   (getDist(minIndex + (int)(n/4)) + getDist(minIndex + (int)(3*n/4))))  
-  //     RotateDeg(90);*/
-}
 
 void DriveToDist(float distance){
   forward();
-  speed_val = 150;
+  speed_val = 400;
   int count  = 0;
   float ultrasonic;
   // Stop driving when closer than distance cm
@@ -609,9 +410,8 @@ void DriveToDist(float distance){
 void MoveToCorner() {
   //give ultrasonic average time to settle
   for(int i = 0; i<100; i++) UpdateSensors();
-  DriveToDist(10);
+  DriveStraight(10, true);
   CLRotateDeg(90);
-
 }
 
 void DriveStraight(float ForwardDistance, bool direct) {
@@ -1101,7 +901,7 @@ float GYRO_reading()
   float gyroRate = (analogRead(GYRO_PIN)/1023.0)*gyroSupplyVoltage - gyroZeroVoltage;
   float angularVelocity = gyroRate/gyroSensitivity;
 
-  angularVelocity = angularVelocity>rotationThreshold ? angularVelocity : 0;
+  angularVelocity = abs(angularVelocity)>rotationThreshold ? angularVelocity : 0;
   //angularVelocity = KalmanFilter(angularVelocity, prevAngularVelocity);
 
   prevAngularVelocity = angularVelocity; 
@@ -1317,10 +1117,10 @@ STATE running() {
  // Average[2] is Left Long
  // Average[3] is Right Long
  GYRO_calibrate();
+ 
  /////////////////////////////////////////////FIND CORNER/////////
   LocateCorner2();
-
-  delay(5000);
+  delay(2000);
 
   //////////////////////////
 
