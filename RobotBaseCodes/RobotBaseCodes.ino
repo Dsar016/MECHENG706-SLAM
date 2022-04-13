@@ -233,29 +233,33 @@ void RotateToMinDist(float d, float minAngle){
 void LocateCorner2(){
   float degDesired = 360.0f;
 
-  float distances[100];
-  float angles[100] = {0};
+  float distances[200];
+  float angles[200] = {0};
 
   float desiredPos = 360;
   float degDriven = 0; 
 
-  const int Kp = 3, Ki = 0, Kd = 0;
+  const int Kp = 4, Ki = 0, Kd = 0;
 
   const float errorTolerance = 0; 
   float error = degDesired - degDriven;
-  int deltaT = 10; //ms
 
   int msCount = 0;
   int i;
 
   for(i = 0; i < 10; i++) distances[i] = HC_SR04_range();
-
+  
+  int deltaT = millis();
   while(error > errorTolerance){
     float v = GYRO_reading();
-    degDriven += v*(deltaT + 1.6)/1000.0;
+    deltaT = (millis() - deltaT);
+    degDriven += v*(deltaT-0.5)/1000.0;
+
+    deltaT = millis();
     error = degDesired - degDriven;
 
     float effort = abs(Kp*error);
+  
     
     if(effort < 80) effort = 80; 
     if(effort > 300) effort = 300; 
@@ -265,7 +269,7 @@ void LocateCorner2(){
     if(error > 0) cw();
     else ccw();
 
-    msCount += deltaT;
+    msCount+= 10;
     if(msCount == 50){
       msCount = 0;
       distances[i] = HC_SR04_range();
@@ -273,7 +277,7 @@ void LocateCorner2(){
       i++;
     }
 
-    delay(deltaT);
+    delay(10);
   }
   stop();
 
@@ -312,7 +316,7 @@ void LocateCorner2(){
 
   float newAngle = angles[minIndex];
   
-  if(newAngle > 180) newAngle -= 360;
+  //if(newAngle > 180) newAngle -= 360;
 
   BluetoothSerial.print("Min Angle: ");
   BluetoothSerial.print(newAngle);
@@ -407,12 +411,14 @@ void CLRotateDeg(float degDesired){
   const float errorTolerance = 0; 
   float prevError = 0, error = degDesired - degDriven;
 
-  int deltaT = 10; //ms
+  int deltaT = millis(); //ms
 
   while(error > errorTolerance){
     float v = GYRO_reading();
 
-    degDriven += v*deltaT/1000.0;
+    deltaT = millis() - deltaT;
+    degDriven += v*(deltaT-0.5)/1000.0;
+    deltaT = millis();
 
     error = degDesired - degDriven;
 
@@ -438,7 +444,7 @@ void CLRotateDeg(float degDesired){
 
     prevError = error;
 
-    delay(deltaT);
+    delay(10);
   }
 
   stop();
@@ -1312,7 +1318,9 @@ STATE running() {
  // Average[3] is Right Long
  GYRO_calibrate();
  /////////////////////////////////////////////FIND CORNER/////////
+  LocateCorner2();
 
+  delay(5000);
 
   //////////////////////////
 
