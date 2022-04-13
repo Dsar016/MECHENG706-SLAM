@@ -244,12 +244,14 @@ void AlignEdge(float Distance) {
 void DriveStraight(float ForwardDistance, bool direct) {
   // ForwardDistance is distance from wall to drive to
   // direct is true if forwards, false if backwards
-  float Kz = 1;
+  float Kz = 2;
   float Fz;
   float Fx = 7;
   float Fy = 0;
   float rotation;
   float ThetaOne, ThetaTwo, ThetaThree, ThetaFour;
+  float timee = 0;
+  float timeEffect = 0;
   
   //Robot Dimensions, specific measurements are shown in our notes
   float Rw = 0.022; //Unit is metres
@@ -271,19 +273,22 @@ void DriveStraight(float ForwardDistance, bool direct) {
   }
 
     while(ForwardDistance <= Average[4]) { //Drive Forwards
+      if (timee < 1000) { // Ramp up the power from 0 to 100
+      timee = timee + 1;
+      timeEffect = timee/1000;
+      }
       UpdateSensors();
       BluetoothSerial.println(Average[4]);
-      //rotation = GYRO_reading();
+      rotation = GYRO_reading();
       // Positive is clockwise
-      Fz = Kz * rotation; // Turning force
+      Fz = Kz * rotation + 0.02; // Turning force
+      BluetoothSerial.println(Fz);
 
       //Calculate Motor Speed
       ThetaOne = Constant * (Fx + Fy - (L + t) * Fz);
       ThetaTwo = Constant * (Fx - Fy + (L + t) * Fz);
       ThetaThree = Constant * (Fx - Fy - (L + t) * Fz);
       ThetaFour = Constant * (Fx + Fy + (L + t) * Fz);
-
-      BluetoothSerial.println(ThetaOne);
       
       // Calculate Motor Power
       left_front_motor.writeMicroseconds(1500 + ThetaOne);
@@ -291,6 +296,21 @@ void DriveStraight(float ForwardDistance, bool direct) {
       left_rear_motor.writeMicroseconds(1500 + ThetaThree);
       right_rear_motor.writeMicroseconds(1500 - ThetaFour); 
     }
+    
+    while(timee >= 0) {
+    ThetaOne = ThetaOne * timee / 1000;
+    ThetaTwo = ThetaTwo * timee / 1000;
+    ThetaThree = ThetaThree * timee / 1000;
+    ThetaFour = ThetaFour * timee / 1000;
+
+    // Calculate Motor Power
+    left_front_motor.writeMicroseconds(1500 + ThetaOne);
+    right_front_motor.writeMicroseconds(1500 - ThetaTwo);
+    left_rear_motor.writeMicroseconds(1500 + ThetaThree);
+    right_rear_motor.writeMicroseconds(1500 - ThetaFour);
+    timee = timee - 1;
+  }
+  stop();
 }
 
 void DriveSide(DIRECTION direct, int time) {
@@ -419,7 +439,8 @@ void GoEdge(float SideDistance, DIRECTION direct, int LongOrMid) {
     left_rear_motor.writeMicroseconds(1500 + ThetaThree);
     right_rear_motor.writeMicroseconds(1500 - ThetaFour);
 
-    if (CurrentIRReading < SideDistance + 1 && CurrentIRReading > SideDistance - 1) {
+
+    if ((CurrentIRReading < SideDistance + 1) && (CurrentIRReading > SideDistance - 1)) {
       count = count + 1;
     } else {count = 0;}
   }
@@ -469,12 +490,17 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
   //0 = Mid range sensor
   float Kx = 0.5;
   float Ky = 0.75;
-  float Kz = 50;
+  float Kz = 120;
   float Fx, Fy, Fz;
   float Confidence;
 
-  float Kyi = 0.01;
+  float timee = 0;
+  float timeEffect = 0;
+  
+  float Kyi = 0;
   float integralError = 0;
+
+  GoEdge(SideDistance, direct, 2);
 
   for (int i = 0; i < 20; i++) {
     UpdateSensors(); 
@@ -503,6 +529,11 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
   }
   
   while (Average[4] >= ForwardDistance && direct == LEFT) {
+    if (timee < 1000) { // Ramp up the power from 0 to 100
+      timee = timee + 1;
+      timeEffect = timee/1000;
+    }
+    
     UpdateSensors();
     //SLAM(direct);
     BluetoothSerial.println(CurrentIRReading);
@@ -510,7 +541,7 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
     PreviousIRReading = CurrentIRReading;
     CurrentIRReading = Average[Left];
 
-    if ((SideDistance - CurrentIRReading) > 3) {
+    if ((SideDistance - CurrentIRReading) > 1.5) {
       integralError = 0;
     }
     else {
@@ -518,7 +549,8 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
     }   
     
     Fy = Ky * (SideDistance - CurrentIRReading) + Kyi * integralError;
-    
+
+    /*
     if ((CurrentIRReading - PreviousIRReading > 0) && (SideDistance - CurrentIRReading > 0)) { // Gap is growing and above goal
       Fz = 0;
     }
@@ -531,15 +563,16 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
     }
     if ((CurrentIRReading - PreviousIRReading < 0) && (SideDistance - CurrentIRReading < 0)) { // Gap is shrinking and less than goal
       Fz = 0;
-    }
+    }*/
+    Fz = Kz * (CurrentIRReading - PreviousIRReading) + 2;
 
     Fx = Kx / (abs((CurrentIRReading - PreviousIRReading) * (SideDistance - CurrentIRReading)) + 0.01);
     
     //Calculate Motor Speed
-    ThetaOne = Constant * (Fx + Fy - (L + t) * Fz);
-    ThetaTwo = Constant * (Fx - Fy + (L + t) * Fz);
-    ThetaThree = Constant * (Fx - Fy - (L + t) * Fz);
-    ThetaFour = Constant * (Fx + Fy + (L + t) * Fz);
+    ThetaOne = timeEffect * Constant * (Fx + Fy - (L + t) * Fz);
+    ThetaTwo = timeEffect * Constant * (Fx - Fy + (L + t) * Fz);
+    ThetaThree = timeEffect * Constant * (Fx - Fy - (L + t) * Fz);
+    ThetaFour = timeEffect * Constant * (Fx + Fy + (L + t) * Fz);
 
     // Calculate Motor Power
     left_front_motor.writeMicroseconds(1500 + ThetaOne);
@@ -550,6 +583,10 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
   }
 
   while (Average[4] >= ForwardDistance && direct == RIGHT) {
+    if (timee < 1000) { // Ramp up the power from 0 to 100
+      timee = timee + 1;
+      timeEffect = timee/1000;
+    }
     UpdateSensors();
     //SLAM(direct);
     BluetoothSerial.println(CurrentIRReading);
@@ -558,12 +595,12 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
     PreviousIRReading = CurrentIRReading;
     CurrentIRReading = Average[Right];
 
-    if ((SideDistance - CurrentIRReading) > 3) {
+    if ((SideDistance - CurrentIRReading) > 1.5) {
       integralError = 0;
     } else {
       integralError = integralError + (SideDistance - CurrentIRReading);
     }   
-    
+    /*
     if (CurrentIRReading - PreviousIRReading > 0 && SideDistance - CurrentIRReading > 0) { // Gap is growing and above goal
       Fz = 0;
     }
@@ -575,17 +612,18 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
     }
     if (CurrentIRReading - PreviousIRReading < 0 && SideDistance - CurrentIRReading < 0) { // Gap is shrinking and less than goal
       Fz = 0;
-    }
+    }*/
+    Fz = Kz * (CurrentIRReading - PreviousIRReading) + 1.5;
     
     Fy = -(Ky * (SideDistance - CurrentIRReading) + Kyi * integralError);
 
-    Fx = 50 + (Kx / (abs((CurrentIRReading - PreviousIRReading) * (SideDistance - CurrentIRReading)) + 0.01));
+    Fx = (Kx / (abs((CurrentIRReading - PreviousIRReading) * (SideDistance - CurrentIRReading)) + 0.01));
     
     //Calculate Motor Speed
-    ThetaOne = Constant * (Fx + Fy - (L + t) * Fz);
-    ThetaTwo = Constant * (Fx - Fy + (L + t) * Fz);
-    ThetaThree = Constant * (Fx - Fy - (L + t) * Fz);
-    ThetaFour = Constant * (Fx + Fy + (L + t) * Fz);
+    ThetaOne = timeEffect * Constant * (Fx + Fy - (L + t) * Fz);
+    ThetaTwo = timeEffect * Constant * (Fx - Fy + (L + t) * Fz);
+    ThetaThree = timeEffect * Constant * (Fx - Fy - (L + t) * Fz);
+    ThetaFour = timeEffect * Constant * (Fx + Fy + (L + t) * Fz);
 
     // Calculate Motor Power
     left_front_motor.writeMicroseconds(1500 + ThetaOne);
@@ -594,7 +632,20 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
     right_rear_motor.writeMicroseconds(1500 - ThetaFour);
     
   }
-  
+  while(timee >= 0) {
+    ThetaOne = ThetaOne * timee / 1000;
+    ThetaTwo = ThetaTwo * timee / 1000;
+    ThetaThree = ThetaThree * timee / 1000;
+    ThetaFour = ThetaFour * timee / 1000;
+
+    // Calculate Motor Power
+    left_front_motor.writeMicroseconds(1500 + ThetaOne);
+    right_front_motor.writeMicroseconds(1500 - ThetaTwo);
+    left_rear_motor.writeMicroseconds(1500 + ThetaThree);
+    right_rear_motor.writeMicroseconds(1500 - ThetaFour);
+    timee = timee - 1;
+  }
+  GoEdge(SideDistance, direct, 2);
   stop();
  }
 
@@ -925,16 +976,17 @@ STATE running() {
     } else {
       whileCheck = Average[3];
     }
-  } */
-  for (int i = 0; i < 20; i++) {
-    UpdateSensors(); 
-  } // Update the sensor readings
-  
+  } */  
   GYRO_calibrate();
-  //FollowEdge(15, 15, RIGHT, 2);
-  DriveStraight(30,true);
-  DriveSide(RIGHT, 300);
-  DriveStraight(80,false);
+  //FollowEdge(20, 15, LEFT, 2);
+  //delay(500);
+  //DriveSide(RIGHT, 50);
+  //delay(500);
+  //DriveStraight(180,false);
+  //delay(500);
+  //DriveSide(RIGHT, 50);
+  //delay(500);
+  DriveStraight(20,true);
   
   disable_motors();
   delay(10000);
