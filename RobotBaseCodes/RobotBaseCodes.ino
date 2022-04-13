@@ -124,7 +124,7 @@ Servo right_front_motor;  // create servo object to control Vex Motor Controller
 
 int speed_val = 100;
 int speed_change;
-
+int j = 0;
 //Serial Pointer
 HardwareSerial *SerialCom;
 
@@ -606,10 +606,6 @@ void MoveToCorner() {
   DriveToDist(10);
   CLRotateDeg(90);
 
-  //give ultrasonic average time to settle
-  for(int i = 0; i<100; i++) UpdateSensors();
-  DriveToDist(10);
-  CLRotateDeg(90);
 }
 
 void DriveStraight(float ForwardDistance, bool direct) {
@@ -651,7 +647,7 @@ void DriveStraight(float ForwardDistance, bool direct) {
       SLAM(SLAMdirect);
       rotation = GYRO_reading();
       // Positive is clockwise
-      Fz = Kz * rotation + 0.02; // Turning force
+      Fz = Kz * rotation - 2.02; // Turning force
 
       //Calculate Motor Speed
       ThetaOne = timeEffect * Constant * (Fx + Fy - (L + t) * Fz);
@@ -946,7 +942,6 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
     
     UpdateSensors();
     SLAM(SLAMdirect);
-    BluetoothSerial.println(CurrentIRReading);
 
     PreviousIRReading = CurrentIRReading;
     CurrentIRReading = Average[Left];
@@ -999,7 +994,6 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
     }
     UpdateSensors();
     SLAM(SLAMdirect);
-    BluetoothSerial.println(CurrentIRReading);
     
     // Calculate Fz
     PreviousIRReading = CurrentIRReading;
@@ -1163,7 +1157,7 @@ void UpdateSensors() {
   CurrentSensor[4] = HC_SR04_range();
   //CurrentSensor[5] = GYRO_reading();
   //CurrentSensor
-  
+
   double total;
   // Find average reading from past 10 readings
   for (int n = 0; n <= 4; n++) {
@@ -1189,6 +1183,7 @@ void SLAM(DIRECTION direct){
   
   float IRDifference, UltrasonicDifference;
   //Update Sensor readings
+  int SideChange;
     
   //This function will be used to create a map and port it externally
   if (MapRowCounter == 0){//The SLAM function should only be run once the robot is in the corner, so it can be initialised as the 0,0 position
@@ -1228,7 +1223,7 @@ void SLAM(DIRECTION direct){
   //Ultrasonic (X Direction)
   Map[1][0] = Map[0][0] + UltrasonicDifference;  
   
-  if (direct == LEFT){
+  if ((direct == PastDirect) && (SideChange == 0)){
     //Robot is still in the first half of the mapping phase, calculations are done in the following code
     //Use the current readings and the past readings to calculate how far the robot has moved
     IRDifference = PastIRReadingSLAM - IRReadingSLAM;
@@ -1239,10 +1234,11 @@ void SLAM(DIRECTION direct){
     PastDirect = direct;
   }
 
-  else if (direct == RIGHT){
+  else if ((direct != PastDirect) || (SideChange == 1)){
     //IR Difference is calculated in a different way, do not update the PastDirect value in this section so that this conditional is fufilled for the rest of the function
     IRDifference = 40 - IRReadingSLAM; //120cm wide table, at the second half IR sensor is reading how far away it is from the 120cm mark instead of the origin.
     Map[1][1] = Map[0][1] + IRDifference; 
+    SideChange = 1;
   }
   
  
@@ -1321,11 +1317,10 @@ STATE running() {
 
 
  ///////////////////////////////////////////////////////////////
- /*
- UpdateSensors();
  
- FollowEdge(15, Average[2], LEFT, 2);
- //TURN 90 DEGREES RIGHT
+ UpdateSensors();
+ /*LocateCorner2();
+
   for (int i = 0; i < 10; i++) {
     UpdateSensors(); 
   }
@@ -1333,48 +1328,61 @@ STATE running() {
   if (Average[4] < 130) {
     //Looking at corner, drive to it
      FollowEdge(15, Average[2], LEFT, 2);
-     //TURN 90 DEGREES RIGHT
+     CLRotateDeg(90);
   }
+  *////////////
+  /*
+ cw();
+ for (int i = 0; i < 10; i++) {
+    UpdateSensors(); 
+  }
+  float oldUltra = Average[4];
   
+ while(Average[4] - oldUltra <= 0) {
+  UpdateSensors();
+  oldUltra = Average[4];
+ }
+ stop();
+ CLRotateDeg(90);
+ DriveStraight(20, true);
+ CLRotateDeg(90);
+ delay(10000);
+ 
 */
+  //////////////////////////
+
+
+ int SLAMCounter = 0;
  FollowEdge(15, 6.8, LEFT, 0); //Second input is side distance
- DriveSide(RIGHT, 50); //Change second input to change how long it shifts for 
- DriveStraight(140, false); //False means drive backwards
- DriveSide(RIGHT, 50); //Change second input to change how long it shifts for 
+ DriveSide(RIGHT, 30); //Change second input to change how long it shifts for 
+ DriveStraight(160, false); //False means drive backwards
+ DriveSide(RIGHT, 30); //Change second input to change how long it shifts for 
 
  for (int i = 0; i < 10; i++) {
     UpdateSensors(); 
   }
-  
- while(Average[3] <= 30){
-  
-    if (Average[2] < Average[3]) {
-       SLAMdirect = LEFT;
-    }
-    else {
-       SLAMdirect = RIGHT;
-    }
-    
-    DriveStraight(20, true); //False means drive backwards
-    DriveSide(RIGHT, 50); //Change second input to change how long it shifts for 
-    
-    if (Average[2] < Average[3]) {
-       SLAMdirect = LEFT;
-    }
-    else {
-       SLAMdirect = RIGHT;
-    }
-    DriveStraight(160, false); //False means drive backwards
-    DriveSide(RIGHT, 50); //Change second input to change how long it shifts for 
 
+ while(j < 3){
+  
+    if (SLAMCounter >= 2) { //Change depending on how many loops are needed to get to the middle
+      SLAMdirect == RIGHT;
+    }
+    DriveStraight(20, true); //False means drive backwards
+    DriveSide(RIGHT, 30); //Change second input to change how long it shifts for 
+    DriveStraight(160, false); //False means drive backwards
+    DriveSide(RIGHT, 30); //Change second input to change how long it shifts for
+    SLAMCounter++; 
+    j = j + 1;
     for (int i = 0; i < 10; i++) {
     UpdateSensors(); 
   }      
  }
-FollowEdge(20, 6.8, RIGHT, 0); //Second input is side distance
 
-
- 
+   GoEdge(15, RIGHT, 2);
+   GoEdge(6.8, RIGHT, 0);
+   FollowEdge(20, 6.8, RIGHT, 0); //Second input is side distance
+   disable_motors();
+   
 }
 
 //Stop of Lipo Battery voltage is too low, to protect Battery
