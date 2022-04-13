@@ -52,9 +52,9 @@ enum DIRECTION {
 };
 
 // Moving Average
-double CurrentSensor[4 + 1]; //IR 1-4 //Ultrasonic //Gyro
-double Average[4 + 1];
-double PrevSensor[4 + 1][10];
+double CurrentSensor[5]; //IR 1-4 //Ultrasonic //Gyro
+double Average[5];
+double PrevSensor[5][10];
 int timer2i = 0;
 
 //Refer to Shield Pinouts.jpg for pin locations
@@ -108,7 +108,7 @@ int MapRowCounter = 0;
 int PastMapRowCounter = 0;
 float IRReadingSLAM, PastIRReadingSLAM, UltrasonicSLAM, PastUltrasonicSLAM;
 DIRECTION PastDirect;
-
+DIRECTION SLAMdirect = LEFT;
 
 //Gyro Analog Pin
 const int GYRO_PIN = A3;
@@ -637,23 +637,47 @@ void DriveStraight(float ForwardDistance, bool direct) {
   // Avergae[1] is Right Mid
   // Average[2] is Left Long
   // Average[3] is Right Long
-  // Average[4] is ultrasonic
-
+  // Average[4] is ultrasonic;
+  
   if (direct == false) {
     Fx = -Fx;
-  }
-
-    while(ForwardDistance <= Average[4]) { //Drive Forwards
-      if (timee <= 1000) { // Ramp up the power from 0 to 100
+    while(ForwardDistance >= Average[4]) { //Drive Backwards
+      
+      if (timee <= 500) { // Ramp up the power from 0 to 100
       timee = timee + 1;
-      timeEffect = timee/1000;
+      timeEffect = timee/500;
       }
       UpdateSensors();
+      SLAM(SLAMdirect);
       rotation = GYRO_reading();
       // Positive is clockwise
       Fz = Kz * rotation + 0.02; // Turning force
 
-      BluetoothSerial.println(ThetaOne);
+      //Calculate Motor Speed
+      ThetaOne = timeEffect * Constant * (Fx + Fy - (L + t) * Fz);
+      ThetaTwo = timeEffect * Constant * (Fx - Fy + (L + t) * Fz);
+      ThetaThree = timeEffect * Constant * (Fx - Fy - (L + t) * Fz);
+      ThetaFour = timeEffect * Constant * (Fx + Fy + (L + t) * Fz);
+      
+      // Calculate Motor Power
+      left_front_motor.writeMicroseconds(1500 + ThetaOne);
+      right_front_motor.writeMicroseconds(1500 - ThetaTwo);
+      left_rear_motor.writeMicroseconds(1500 + ThetaThree);
+      right_rear_motor.writeMicroseconds(1500 - ThetaFour); 
+    }  
+  }
+
+  else {
+    while(ForwardDistance <= Average[4]) { //Drive Forwards
+      if (timee <= 500) { // Ramp up the power from 0 to 100
+      timee = timee + 1;
+      timeEffect = timee/500;
+      }
+      UpdateSensors();
+      SLAM(SLAMdirect);
+      rotation = GYRO_reading();
+      // Positive is clockwise
+      Fz = Kz * rotation + 0.02; // Turning force
 
       //Calculate Motor Speed
       ThetaOne = timeEffect * Constant * (Fx + Fy - (L + t) * Fz);
@@ -667,12 +691,13 @@ void DriveStraight(float ForwardDistance, bool direct) {
       left_rear_motor.writeMicroseconds(1500 + ThetaThree);
       right_rear_motor.writeMicroseconds(1500 - ThetaFour); 
     }
-    
+
+  }
     while(timee >= 0) {
-    ThetaOne = ThetaOne * timee / 1000;
-    ThetaTwo = ThetaTwo * timee / 1000;
-    ThetaThree = ThetaThree * timee / 1000;
-    ThetaFour = ThetaFour * timee / 1000;
+    ThetaOne = ThetaOne * timee / 500;
+    ThetaTwo = ThetaTwo * timee / 500;
+    ThetaThree = ThetaThree * timee / 500;
+    ThetaFour = ThetaFour * timee / 500;
 
     // Calculate Motor Power
     left_front_motor.writeMicroseconds(1500 + ThetaOne);
@@ -715,6 +740,7 @@ void DriveSide(DIRECTION direct, int time) {
 
     while(count < time) { 
       UpdateSensors();
+      SLAM(SLAMdirect);
       
       rotation = GYRO_reading();
       // Positive is clockwise
@@ -795,7 +821,7 @@ void GoEdge(float SideDistance, DIRECTION direct, int LongOrMid) {
   // LEFT SIDE
   while (count < 20 && direct == LEFT) {
     UpdateSensors();
-    //SLAM(direct);
+    SLAM(SLAMdirect);
     BluetoothSerial.println(CurrentIRReading);
 
     PreviousIRReading = CurrentIRReading;
@@ -833,7 +859,7 @@ void GoEdge(float SideDistance, DIRECTION direct, int LongOrMid) {
     // RIGHT SIDE
   while (count < 20 && direct == RIGHT) {
     UpdateSensors();
-    //SLAM(direct);
+    SLAM(SLAMdirect);
 
     PreviousIRReading = CurrentIRReading;
     CurrentIRReading = Average[Right];
@@ -919,7 +945,7 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
     }
     
     UpdateSensors();
-    //SLAM(direct);
+    SLAM(SLAMdirect);
     BluetoothSerial.println(CurrentIRReading);
 
     PreviousIRReading = CurrentIRReading;
@@ -972,7 +998,7 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
       timeEffect = timee/1000;
     }
     UpdateSensors();
-    //SLAM(direct);
+    SLAM(SLAMdirect);
     BluetoothSerial.println(CurrentIRReading);
     
     // Calculate Fz
@@ -1140,7 +1166,7 @@ void UpdateSensors() {
   
   double total;
   // Find average reading from past 10 readings
-  for (int n = 0; n < sizeof(CurrentSensor); n++) {
+  for (int n = 0; n <= 4; n++) {
     total = 0;
     for (int m = 0; m < 10; m++) {
       total = PrevSensor[n][m] + total;
@@ -1202,7 +1228,7 @@ void SLAM(DIRECTION direct){
   //Ultrasonic (X Direction)
   Map[1][0] = Map[0][0] + UltrasonicDifference;  
   
-  if (PastDirect == direct){
+  if (direct == LEFT){
     //Robot is still in the first half of the mapping phase, calculations are done in the following code
     //Use the current readings and the past readings to calculate how far the robot has moved
     IRDifference = PastIRReadingSLAM - IRReadingSLAM;
@@ -1213,7 +1239,7 @@ void SLAM(DIRECTION direct){
     PastDirect = direct;
   }
 
-  else if (PastDirect != direct){
+  else if (direct == RIGHT){
     //IR Difference is calculated in a different way, do not update the PastDirect value in this section so that this conditional is fufilled for the rest of the function
     IRDifference = 40 - IRReadingSLAM; //120cm wide table, at the second half IR sensor is reading how far away it is from the 120cm mark instead of the origin.
     Map[1][1] = Map[0][1] + IRDifference; 
@@ -1289,10 +1315,31 @@ STATE running() {
  // Average[2] is Left Long
  // Average[3] is Right Long
  GYRO_calibrate();
+ /////////////////////////////////////////////FIND SHORTEST WALL/////////
+
+
+
+
+ ///////////////////////////////////////////////////////////////
  /*
+ UpdateSensors();
+ 
+ FollowEdge(15, Average[2], LEFT, 2);
+ //TURN 90 DEGREES RIGHT
+  for (int i = 0; i < 10; i++) {
+    UpdateSensors(); 
+  }
+
+  if (Average[4] < 130) {
+    //Looking at corner, drive to it
+     FollowEdge(15, Average[2], LEFT, 2);
+     //TURN 90 DEGREES RIGHT
+  }
+  
+*/
  FollowEdge(15, 6.8, LEFT, 0); //Second input is side distance
  DriveSide(RIGHT, 50); //Change second input to change how long it shifts for 
- DriveStraight(180, false); //False means drive backwards
+ DriveStraight(140, false); //False means drive backwards
  DriveSide(RIGHT, 50); //Change second input to change how long it shifts for 
 
  for (int i = 0; i < 10; i++) {
@@ -1300,17 +1347,32 @@ STATE running() {
   }
   
  while(Average[3] <= 30){
+  
+    if (Average[2] < Average[3]) {
+       SLAMdirect = LEFT;
+    }
+    else {
+       SLAMdirect = RIGHT;
+    }
+    
     DriveStraight(20, true); //False means drive backwards
     DriveSide(RIGHT, 50); //Change second input to change how long it shifts for 
-    DriveStraight(180, false); //False means drive backwards
+    
+    if (Average[2] < Average[3]) {
+       SLAMdirect = LEFT;
+    }
+    else {
+       SLAMdirect = RIGHT;
+    }
+    DriveStraight(160, false); //False means drive backwards
     DriveSide(RIGHT, 50); //Change second input to change how long it shifts for 
 
     for (int i = 0; i < 10; i++) {
     UpdateSensors(); 
   }      
  }
-FollowEdge(20, 6.8, LEFT, 0); //Second input is side distance
-*/DriveStraight(20, true); //False means drive backwards
+FollowEdge(20, 6.8, RIGHT, 0); //Second input is side distance
+
 
  
 }
