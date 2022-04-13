@@ -884,7 +884,7 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
   float Kyi = 0;
   float integralError = 0;
 
-  GoEdge(SideDistance, direct, 2);
+  GoEdge(SideDistance, direct, LongOrMid);
 
   for (int i = 0; i < 20; i++) {
     UpdateSensors(); 
@@ -1029,7 +1029,7 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
     right_rear_motor.writeMicroseconds(1500 - ThetaFour);
     timee = timee - 1;
   }
-  GoEdge(SideDistance, direct, 2);
+  GoEdge(SideDistance, direct, LongOrMid);
   stop();
  }
 
