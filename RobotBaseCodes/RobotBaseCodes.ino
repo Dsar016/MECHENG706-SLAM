@@ -228,7 +228,7 @@ void RotateToMinDist(){
 
   float degDriven = 0; 
 
-  const int Kp = 4, Ki = 0, Kd = 0;
+  const int Kp = 5, Ki = 0, Kd = 0;
 
   const float errorTolerance = 0; 
   float error = degDesired - degDriven;
@@ -261,7 +261,7 @@ void RotateToMinDist(){
     else ccw();
 
     msCount+= 10;
-    if(msCount == 20){
+    if(msCount == 10){
       msCount = 0;
       distances[i] = HC_SR04_range();
       angles[i] = KalmanFilter(degDriven, prevAngle);
@@ -305,6 +305,7 @@ void RotateToMinDist(){
   float newAngle = angles[minIndex] - 60;
   
   //if(newAngle > 180) newAngle -= 360;
+  newAngle = newAngle - 3; //abs(newAngle)/newAngle;
 
   BluetoothSerial.print("Min Angle: ");
   BluetoothSerial.print(newAngle);
@@ -409,7 +410,7 @@ void LocateCorner2(){
 
   delay(500);
 
-  CLRotateDeg(newAngle);
+  CLRotateDeg(newAngle - 10);
 
   delay(500);
 
@@ -433,8 +434,11 @@ void LocateCorner2(){
     CLRotateDeg(90);
   }
   
+  //RotateToMinDist();
+
   MoveToCorner();
   MoveToCorner();
+
 
 }
 
@@ -496,7 +500,7 @@ void MoveToCorner() {
   //give ultrasonic average time to settle
   for(int i = 0; i<50; i++) UpdateSensors();
   DriveStraight(10, true);
-  CLRotateDeg(90);
+    CLRotateDeg(90);
 }
 
 void DriveStraight(float ForwardDistance, bool direct) {
@@ -1203,20 +1207,22 @@ STATE running() {
  // Average[3] is Right Long
  GYRO_calibrate();
 
+ //CLRotateDeg(90);
+  //RotateToMinDist();
+  //delay(2000);
  //BluetoothSerial.println("GO ROBOT GO");
-  RotateToMinDist(); 
-  delay(5000);
  /////////////////////////////////////////////FIND CORNER/////////
- // LocateCorner2();
-  delay(500);
+  LocateCorner2();
+  delay(250);
 
   //////////////////////////
 
 
  int SLAMCounter = 0;
- FollowEdge(15, 6.8, LEFT, 0); //Second input is side distance
+ FollowEdge(15, 6, LEFT, 0); //Second input is side distance
  DriveSide(RIGHT, 30); //Change second input to change how long it shifts for 
- DriveStraight(160, false); //False means drive backwards
+ RotateToMinDist();
+ DriveStraight(165, false); //False means drive backwards
  DriveSide(RIGHT, 30); //Change second input to change how long it shifts for 
 
  for (int i = 0; i < 10; i++) {
@@ -1230,7 +1236,7 @@ STATE running() {
     }
     DriveStraight(20, true); //False means drive backwards
     DriveSide(RIGHT, 30); //Change second input to change how long it shifts for 
-    DriveStraight(160, false); //False means drive backwards
+    DriveStraight(165, false); //False means drive backwards
     DriveSide(RIGHT, 30); //Change second input to change how long it shifts for
     SLAMCounter++; 
     j = j + 1;
@@ -1240,7 +1246,8 @@ STATE running() {
  }
 
    GoEdge(15, RIGHT, 2);
-   FollowEdge(20, 6.8, RIGHT, 0); //Second input is side distance
+   FollowEdge(20, 6
+   , RIGHT, 0); //Second input is side distance
    disable_motors();
    delay(50000);
 
