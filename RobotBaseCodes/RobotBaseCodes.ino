@@ -529,6 +529,7 @@ void DriveStraight(float ForwardDistance, bool direct) {
   if (direct == false) {
     Fx = -Fx;
     while(ForwardDistance >= Average[4]) { //Drive Backwards
+      BluetoothSerial.println(Average[4]);
 
       
       if (timee <= 250) { // Ramp up the power from 0 to 100
@@ -1230,7 +1231,7 @@ STATE running() {
  FollowEdge(15, 6, LEFT, 0); //Second input is side distance
  DriveSide(RIGHT, 20); //Change second input to change how long it shifts for 
  RotateToMinDist();
- DriveStraight(200, false); //False means drive backwards
+ DriveStraight(240, false); //False means drive backwards
  DriveSide(RIGHT, 20); //Change second input to change how long it shifts for 
 
  for (int i = 0; i < 10; i++) {
@@ -1265,7 +1266,7 @@ STATE running() {
  }
  
    DriveSide(RIGHT, 20);
-   FollowEdge(20, 7, RIGHT, 0); //Second input is side distance
+   FollowEdge(20, 9, RIGHT, 0); //Second input is side distance
    disable_motors();
    delay(50000);
 }
