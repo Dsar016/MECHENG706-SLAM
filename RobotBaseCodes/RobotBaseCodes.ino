@@ -408,11 +408,7 @@ void LocateCorner2(){
   BluetoothSerial.print(" at ");
   BluetoothSerial.print(distances[minIndex]);
 
-  delay(500);
-
   CLRotateDeg(newAngle - 10);
-
-  delay(500);
 
   float oppositeAngle = (newAngle + 180.0);
 
@@ -428,7 +424,6 @@ void LocateCorner2(){
   //BluetoothSerial.print(" | Cross Dist: ");
   //BluetoothSerial.print(crossdist);
 
-  delay(500); 
   
   if(crossdist < 140){
     CLRotateDeg(90);
@@ -499,7 +494,7 @@ void DriveToDist(float distance){
 void MoveToCorner() {
   //give ultrasonic average time to settle
   for(int i = 0; i<50; i++) UpdateSensors();
-  DriveStraight(10, true);
+  DriveStraight(5, true);
     CLRotateDeg(90);
 }
 
@@ -514,6 +509,7 @@ void DriveStraight(float ForwardDistance, bool direct) {
   float ThetaOne, ThetaTwo, ThetaThree, ThetaFour;
   float timee = 0;
   float timeEffect = 0;
+  int count = 0;
   
   //Robot Dimensions, specific measurements are shown in our notes
   float Rw = 0.022; //Unit is metres
@@ -533,9 +529,10 @@ void DriveStraight(float ForwardDistance, bool direct) {
   if (direct == false) {
     Fx = -Fx;
     while(ForwardDistance >= Average[4]) { //Drive Backwards
+
       
       if (timee <= 250) { // Ramp up the power from 0 to 100
-      timee = timee + 1;
+      timee = timee + 2;
       timeEffect = timee/500;
       }
       UpdateSensors();
@@ -555,13 +552,20 @@ void DriveStraight(float ForwardDistance, bool direct) {
       right_front_motor.writeMicroseconds(1500 - ThetaTwo);
       left_rear_motor.writeMicroseconds(1500 + ThetaThree);
       right_rear_motor.writeMicroseconds(1500 - ThetaFour); 
+      delay(10);
+      count = count + 1;
+      SerialCom->println(count);
+      if (count > 475){
+        //Use Count so that it only drives for a certain amount of time before stopping
+        break;
+      }
     }  
   }
 
   else {
     while(ForwardDistance <= Average[4]) { //Drive Forwards
       if (timee <= 250) { // Ramp up the power from 0 to 100
-      timee = timee + 1;
+      timee = timee + 2;
       timeEffect = timee/500;
       }
       UpdateSensors();
@@ -595,7 +599,7 @@ void DriveStraight(float ForwardDistance, bool direct) {
     right_front_motor.writeMicroseconds(1500 - ThetaTwo);
     left_rear_motor.writeMicroseconds(1500 + ThetaThree);
     right_rear_motor.writeMicroseconds(1500 - ThetaFour);
-    timee = timee - 1;
+    timee = timee - 2;
   }
   stop();
 }
@@ -791,7 +795,7 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
   //0 = Mid range sensor
   float Kx = 0.5;
   float Ky = 0.75;
-  float Kz = 120;
+  float Kz = 125;
   float Fx, Fy, Fz;
   float Confidence;
 
@@ -831,7 +835,7 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
   
   while (Average[4] >= ForwardDistance && direct == LEFT) {
     if (timee < 1000) { // Ramp up the power from 0 to 100
-      timee = timee + 1;
+      timee = timee + 2;
       timeEffect = timee/1000;
     }
     
@@ -884,7 +888,7 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
 
   while (Average[4] >= ForwardDistance && direct == RIGHT) {
     if (timee < 1000) { // Ramp up the power from 0 to 100
-      timee = timee + 1;
+      timee = timee + 2;
       timeEffect = timee/1000;
     }
     UpdateSensors();
@@ -942,7 +946,7 @@ void FollowEdge(float ForwardDistance, float SideDistance, DIRECTION direct, int
     right_front_motor.writeMicroseconds(1500 - ThetaTwo);
     left_rear_motor.writeMicroseconds(1500 + ThetaThree);
     right_rear_motor.writeMicroseconds(1500 - ThetaFour);
-    timee = timee - 1;
+    timee = timee - 2;
   }
   GoEdge(SideDistance, direct, LongOrMid);
   stop();
@@ -1202,6 +1206,9 @@ STATE running() {
   #endif
   }
 
+  int DistanceChecker = 0;
+  
+
   // PROTOTYPE 1 //////////////////////
  // Average[2] is Left Long
  // Average[3] is Right Long
@@ -1219,39 +1226,48 @@ STATE running() {
 
 
  int SLAMCounter = 0;
+ DriveSide(LEFT,5);
  FollowEdge(15, 6, LEFT, 0); //Second input is side distance
- DriveSide(RIGHT, 30); //Change second input to change how long it shifts for 
+ DriveSide(RIGHT, 20); //Change second input to change how long it shifts for 
  RotateToMinDist();
- DriveStraight(165, false); //False means drive backwards
- DriveSide(RIGHT, 30); //Change second input to change how long it shifts for 
+ DriveStraight(200, false); //False means drive backwards
+ DriveSide(RIGHT, 20); //Change second input to change how long it shifts for 
 
  for (int i = 0; i < 10; i++) {
     UpdateSensors(); 
   }
 
- while(j < 3){
+ while(j < 2){
   
-    if (SLAMCounter >= 2) { //Change depending on how many loops are needed to get to the middle
+    if (SLAMCounter >= 1) { //Change depending on how many loops are needed to get to the middle
       SLAMdirect == RIGHT;
     }
     DriveStraight(20, true); //False means drive backwards
-    DriveSide(RIGHT, 30); //Change second input to change how long it shifts for 
-    DriveStraight(165, false); //False means drive backwards
-    DriveSide(RIGHT, 30); //Change second input to change how long it shifts for
+    DriveSide(RIGHT, 15); //Change second input to change how long it shifts for 
+    RotateToMinDist();
+    DriveStraight(200, false); //False means drive backwards
+    DriveSide(RIGHT, 15); //Change second input to change how long it shifts for
     SLAMCounter++; 
     j = j + 1;
     for (int i = 0; i < 10; i++) {
-    UpdateSensors(); 
-  }      
+      UpdateSensors(); 
+      if (Average[3] <= 25){
+        DistanceChecker = DistanceChecker + 1;
+      }
+    }        
+    
+    if (DistanceChecker >= 8) { //Removes the likelihood of outliers causing the loop to exit early
+      break;
+    }
+    else {
+      DistanceChecker = 0;
+    }
  }
-
-   GoEdge(15, RIGHT, 2);
-   FollowEdge(20, 6
-   , RIGHT, 0); //Second input is side distance
+ 
+   DriveSide(RIGHT, 20);
+   FollowEdge(20, 7, RIGHT, 0); //Second input is side distance
    disable_motors();
    delay(50000);
-
-   
 }
 
 //Stop of Lipo Battery voltage is too low, to protect Battery
