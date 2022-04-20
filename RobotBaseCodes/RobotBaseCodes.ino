@@ -529,7 +529,6 @@ void DriveStraight(float ForwardDistance, bool direct) {
   if (direct == false) {
     Fx = -Fx;
     while(ForwardDistance >= Average[4]) { //Drive Backwards
-      BluetoothSerial.println(Average[4]);
 
       
       if (timee <= 250) { // Ramp up the power from 0 to 100
