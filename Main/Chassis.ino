@@ -32,6 +32,11 @@ void Chassis::SetSpeed(int x_vel, int y_vel, int z_vel)
     this->x_vel = (x_vel != NULL) ? x_vel : this->x_vel;
     this->y_vel = (y_vel != NULL) ? y_vel : this->y_vel;
     this->z_vel = (z_vel != NULL) ? z_vel : this->z_vel;
+
+    ThetaOne = one_over_Rw * (x_vel + y_vel - (L + t) * z_vel);
+    ThetaTwo = one_over_Rw * (x_vel - y_vel + (L + t) *z_vel);
+    ThetaThree = one_over_Rw * (x_vel - y_vel - (L + t) *z_vel);
+    ThetaFour = one_over_Rw * (x_vel + y_vel + (L + t) *z_vel);
 }
 
 void Chassis::ResetOdometry()
@@ -53,11 +58,12 @@ void Chassis::UpdateOdometry(float deltaT)
 /* Configures motor PWM signals to current speed */
 void Chassis::UpdateSpeeds()
 {
-    left_front_motor.writeMicroseconds(1500 + x_vel + y_vel + (L1+L2)*z_vel);
-    left_rear_motor.writeMicroseconds(1500 + x_vel - y_vel + (L1+L2)*z_vel);
-    right_rear_motor.writeMicroseconds(1500 - x_vel - y_vel  + (L1+L2)*z_vel);
-    right_front_motor.writeMicroseconds(1500 - x_vel + y_vel + (L1+L2)*z_vel);
+    left_front_motor.writeMicroseconds(1500 + ThetaOne);
+    right_front_motor.writeMicroseconds(1500 - ThetaTwo);
+    left_rear_motor.writeMicroseconds(1500 + ThetaThree);
+    right_rear_motor.writeMicroseconds(1500 - ThetaFour); 
 }
+
 
 /* detaches all motors from GPIO pins. Sets GPIO pinmodes to input */
 void Chassis::DisableMotors()

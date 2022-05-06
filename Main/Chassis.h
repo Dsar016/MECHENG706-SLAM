@@ -52,6 +52,17 @@ class Chassis
         int y_vel = 0;
         int z_vel = 0; //angular
 
+        // Motor Speed Effects
+        int ThetaOne;
+        int ThetaTwo;
+        int ThetaThree;
+        int ThetaFour;
+
+        //Robot Dimensions, specific measurements are shown in our notes
+        float L = 0.09; //Unit is metres
+        float t = 0.09; //Unit is metres
+        float one_over_Rw = 1 / 0.022;
+
         void UpdateOdometry(float deltaT);
 
         /* Configures motor PWM signals to current speed */
