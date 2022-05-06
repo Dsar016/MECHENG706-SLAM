@@ -1,11 +1,10 @@
 #include <Servo.h> 
 
-#ifndef CHASSIS_H
-#define CHASSIS_H
-
 /**
  * Class for handling driving robot, odometry and battery checks
  */
+#ifndef CHASSIS_H
+#define CHASSIS_H
 class Chassis
 {
     public: //PUBLIC_MEMBERS_______________________________________________________________________________________
@@ -14,9 +13,10 @@ class Chassis
         float y_pos = 0;
         float z_pos = 0; //angular
         
+        /* Constructor */
         Chassis();
 
-        //main chassis function, called each loop
+        /* main chassis function, called each loop */
         void Run(float deltaT);
 
         /* Updates the robots speed in each degree of freedom */
@@ -76,5 +76,4 @@ class Chassis
 
         void StopMotors();
 };
-
 #endif

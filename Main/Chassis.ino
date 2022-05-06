@@ -3,10 +3,6 @@
 #include <SoftwareSerial.h>
 HardwareSerial *SerialCom;
 
-
-/**
- * Class for handling driving robot, odometry and battery checks
- */
 Chassis::Chassis()
 {
     SerialCom = &Serial;
@@ -45,8 +41,6 @@ void Chassis::ResetOdometry()
     y_pos = 0;
     z_pos = 0;
 }
-
-
 
 void Chassis::UpdateOdometry(float deltaT)
 {
