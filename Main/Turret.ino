@@ -1,41 +1,61 @@
 #include <Servo.h> 
 #include "Turret.h"
 
-Turret::Turret()
+Turret::Turret(int scanAngle)
 {
-    pinMode(FAN_PIN, OUTPUT);
+    /*pinMode(FAN_PIN, OUTPUT);
     pinMode(IR_PIN1, INPUT);
     pinMode(IR_PIN2, INPUT);
     pinMode(IR_PIN3, INPUT);
-    pinMode(IR_PIN4, INPUT);
+    pinMode(IR_PIN4, INPUT);*/
+    Serial.begin(115200);
+    
+    m_MinAngle = 1500 - (600.0/90.0)*scanAngle;
+    m_MaxAngle = 1500 + (600.0/90.0)*scanAngle;
 
-    m_turretServo.attach(SERVO_PIN);
-    m_turretServo.writeMicroseconds(90); //reset servo to straight
+    m_turretServo.attach(SERVO_PIN, m_MinAngle, m_MaxAngle); //, m_MinAngle, m_MaxAngle);
+    m_turretServo.writeMicroseconds(1500); //reset servo to straight
 
     m_currentDir = RIGHT;
 }
 
-void Turret::Run()
+void Turret::Run(int deltaT)
 {
-    if(!m_fireDetected){
+    
+    /*if(!m_fireDetected){
         m_fireDetected = RunScan();
     }
     else{
         ExtinguishFire();
-    }
+    }*/
+    //delay(20);
+    RunScan(deltaT);
 }
 
-bool Turret::RunScan()
+bool Turret::RunScan(int deltaT)
 {
+    m_TimeRunning += deltaT;  
+    //if(m_TimeRunning <= 0) return; //increase this number to slow down scan speed
+    
     //Update Servo Position
     int currentPos = m_turretServo.readMicroseconds();
-    if ((currentPos + m_currentDir < 0) && (m_currentDir == RIGHT)){
+    /*if (currentPos - 50 < m_MinAngle){
+      m_turretServo.writeMicroseconds(m_MaxAngle);
+    }
+    else{
+      m_turretServo.writeMicroseconds(m_MinAngle);
+    }
+    m_TimeRunning = 0;*/
+    //Serial.println(currentPos);
+    if (currentPos + m_currentDir < m_MinAngle){
         m_currentDir = LEFT;
     } 
-    if ((currentPos + m_currentDir > 180) && (m_currentDir == LEFT)){
+    else if (currentPos + m_currentDir > m_MaxAngle){
         m_currentDir = RIGHT;
     }
+
     m_turretServo.writeMicroseconds(currentPos + m_currentDir);
+    m_TimeRunning = 0;
 
     //check for fire
     float threshold = 0; //brightness threshold for determining. 
