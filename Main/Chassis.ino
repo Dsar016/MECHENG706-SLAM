@@ -1,12 +1,9 @@
 #include <Servo.h> 
 #include "Chassis.h"
 #include <SoftwareSerial.h>
-HardwareSerial *SerialCom;
 
 Chassis::Chassis()
 {
-    //SerialCom = &Serial;
-    SerialCom->begin(115200);
     EnableMotors();
 }
 
@@ -76,7 +73,7 @@ void Chassis::DisableMotors()
 /* reattaches all motors to GPIO pins. Sets GPIO pinmodes to input */
 void Chassis::EnableMotors()
 {
-    SerialCom->println("enabling");
+    Serial.println("enabling");
     left_front_motor.attach(left_front);  // attaches the servo on pin left_front to turn Vex Motor Controller 29 On
     left_rear_motor.attach(left_rear);  // attaches the servo on pin left_rear to turn Vex Motor Controller 29 On
     right_rear_motor.attach(right_rear);  // attaches the servo on pin right_rear to turn Vex Motor Controller 29 On

@@ -1,8 +1,8 @@
 #include "Battery.h"
 #include <SoftwareSerial.h>
-//HardwareSerial *SerialCom;
+#include "Serial.h"
 
-Battery::Battery(HardwareSerial Serial) {*SerialCom = &Serial;}
+Battery::Battery() {}
 
 // Check the battery voltage is stable during initialisation
 void Battery::Check()
@@ -19,7 +19,7 @@ void Battery::Check()
         
     }
     
-    SerialCom->println("Battery Ok");
+    Serial.println("Battery Ok");
 }
 
 bool Battery::isOk() {
@@ -38,24 +38,24 @@ bool Battery::isOk() {
 
   if (Lipo_level_cal > 0 && Lipo_level_cal < 160) {
     previous_millis = millis();
-    SerialCom->print("Lipo level:");
-    SerialCom->print(Lipo_level_cal);
-    SerialCom->print("%");
-    // SerialCom->print(" : Raw Lipo:");
-    // SerialCom->println(raw_lipo);
-    SerialCom->println("");
+    Serial.print("Lipo level:");
+    Serial.print(Lipo_level_cal);
+    Serial.print("%");
+    // Serial.print(" : Raw Lipo:");
+    // Serial.println(raw_lipo);
+    Serial.println("");
     Low_voltage_counter = 0;
     return true;
   } else {
     if (Lipo_level_cal < 0)
-      SerialCom->println("Lipo is Disconnected or Power Switch is turned OFF!!!");
+      Serial.println("Lipo is Disconnected or Power Switch is turned OFF!!!");
     else if (Lipo_level_cal > 160)
-      SerialCom->println("!Lipo is Overchanged!!!");
+      Serial.println("!Lipo is Overchanged!!!");
     else {
-      SerialCom->println("Lipo voltage too LOW, any lower and the lipo with be damaged");
-      SerialCom->print("Please Re-charge Lipo:");
-      SerialCom->print(Lipo_level_cal);
-      SerialCom->println("%");
+      Serial.println("Lipo voltage too LOW, any lower and the lipo with be damaged");
+      Serial.print("Please Re-charge Lipo:");
+      Serial.print(Lipo_level_cal);
+      Serial.println("%");
     }
 
     Low_voltage_counter++;

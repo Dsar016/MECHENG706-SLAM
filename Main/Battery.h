@@ -6,9 +6,8 @@
 class Battery
 {
     public: //PUBLIC_MEMBERS_______________________________________________________________________________________
-        Battery(HardwareSerial &Serial);
+        Battery();
         void Check();
-        HardwareSerial *SerialCom;
 
     private: //PRIVATE_MEMBERS_______________________________________________________________________________________
         bool isOk();
