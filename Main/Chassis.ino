@@ -5,7 +5,7 @@ HardwareSerial *SerialCom;
 
 Chassis::Chassis()
 {
-    SerialCom = &Serial;
+    //SerialCom = &Serial;
     SerialCom->begin(115200);
     EnableMotors();
 }
