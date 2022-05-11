@@ -33,7 +33,7 @@ void setup()
   state = INITIALISING;
 
   chassis = new Chassis();
-  turret = new Turret();
+  turret = new Turret(45);
   gyro = new Gyro();
   sonarSensor = new SonarSensor();
   sideRangePair = new IRRangePair(A15, A13, 10); // fix these vals
