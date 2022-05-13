@@ -10,18 +10,22 @@ Chassis::Chassis()
 //main chassis function, called each loop
 void Chassis::Run(float deltaT)
 {
-
-    SetSpeed(100, 0, 10); // Update speeds for continuing spiral
+    if (x_vel < 30) {
+        x_vel += 0.000001;
+    }
+    SetSpeed(x_vel, 0, 30); // Update speeds for continuing spiral
     UpdateSpeeds();
     UpdateOdometry(deltaT);
 }
 
 /* Updates the robots speed in each degree of freedom */
-void Chassis::SetSpeed(int x_vel, int y_vel, int z_vel)
+void Chassis::SetSpeed(float x_vel, float y_vel, float z_vel)
 {
+    /*
     this->x_vel = (x_vel != NULL) ? x_vel : this->x_vel;
     this->y_vel = (y_vel != NULL) ? y_vel : this->y_vel;
     this->z_vel = (z_vel != NULL) ? z_vel : this->z_vel;
+    */
 
     ThetaOne = one_over_Rw * (x_vel + y_vel - (L + t) * z_vel);
     ThetaTwo = one_over_Rw * (x_vel - y_vel + (L + t) *z_vel);

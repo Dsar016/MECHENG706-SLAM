@@ -13,9 +13,9 @@ class Chassis
         float y_pos = 0;
         float z_pos = 0; //angular
 
-        int x_vel = 0;
-        int y_vel = 0;
-        int z_vel = 0; //angular
+        float x_vel = 0;
+        float y_vel = 0;
+        float z_vel = 0; //angular
         
         /* Constructor */
         Chassis();
@@ -24,7 +24,7 @@ class Chassis
         void Run(float deltaT);
 
         /* Updates the robots speed in each degree of freedom */
-        void SetSpeed(int x_vel, int y_vel, int z_vel);
+        void SetSpeed(float x_vel, float y_vel, float z_vel);
 
         void ResetOdometry();
 

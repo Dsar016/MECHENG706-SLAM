@@ -37,14 +37,14 @@ void setup()
   gyro = new Gyro();
   sonarSensor = new SonarSensor();
   sideRangePair = new IRRangePair(A15, A13, 10); // fix these vals
-  forwardRangePair = new IRRangePair(A14, A11, 10);
+  forwardRangePair = new IRRangePair(A14, A12, 10);
   battery = new Battery();
 
   //Serial Pointer
   // Setup the Serial port and pointer, the pointer allows switching the debug info through the USB port(Serial) or Bluetooth port(Serial1) with ease.
   Serial.begin(115200);
   BluetoothSerial->begin(115200);
-  Serial.println("ROBUSSY ROLLOUT");
+  Serial.println("Starting");
 }
 
 void loop()
@@ -71,6 +71,9 @@ void Initialising(float deltaT)
 void Driving(float deltaT)
 {
   chassis->Run(deltaT);
+  //sonarSensor->Run();
+  //Serial.println(sonarSensor->GetDist());
+  delay(deltaT);
 }
 
 void Blowing(float deltaT)

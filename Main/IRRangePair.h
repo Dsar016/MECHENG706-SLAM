@@ -15,6 +15,9 @@ class IRRangePair
 
         double KalmanFilter(double rawdata, double prev_est);
 
+        float currentDist1 = 0;
+        float currentDist2 = 0;
+
     private: //PRIVATE_MEMBERS_______________________________________________________________________________________
 
         const short IR_PIN_1;
@@ -29,9 +32,6 @@ class IRRangePair
         const double A14_Value = 1978.5;
         const double A15_Exponent = -1.151;
         const double A15_Value = 12293;
-
-        float currentDist1 = 0;
-        float currentDist2 = 0;
         
         //Kalman Filter values
         double last_est_1 = 0;
