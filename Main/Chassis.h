@@ -12,6 +12,10 @@ class Chassis
         float x_pos = 0;
         float y_pos = 0;
         float z_pos = 0; //angular
+
+        int x_vel = 0;
+        int y_vel = 0;
+        int z_vel = 0; //angular
         
         /* Constructor */
         Chassis();
@@ -47,10 +51,6 @@ class Chassis
 
         const float L1 = 1;
         const float L2 = 1; 
-
-        int x_vel = 0;
-        int y_vel = 0;
-        int z_vel = 0; //angular
 
         // Motor Speed Effects
         int ThetaOne;

@@ -10,13 +10,10 @@ Chassis::Chassis()
 //main chassis function, called each loop
 void Chassis::Run(float deltaT)
 {
+
+    SetSpeed(100, 0, 10); // Update speeds for continuing spiral
     UpdateSpeeds();
     UpdateOdometry(deltaT);
-    /*if(!is_battery_voltage_OK)
-    {
-        StopMotors();
-        return;
-    }*/    
 }
 
 /* Updates the robots speed in each degree of freedom */
