@@ -24,8 +24,8 @@ Chassis* chassis;
 Turret* turret;
 Gyro* gyro;
 SonarSensor* sonarSensor;
-IRRangePair* sideRangePair;
-IRRangePair* forwardRangePair;
+IRRangePair* LeftRangePair;
+IRRangePair* RightRangePair;
 Battery* battery;
 
 void setup()
@@ -36,8 +36,8 @@ void setup()
   turret = new Turret(45);
   gyro = new Gyro();
   sonarSensor = new SonarSensor();
-  sideRangePair = new IRRangePair(A15, A13, 10); // fix these vals
-  forwardRangePair = new IRRangePair(A14, A11, 10);
+  LeftRangePair = new IRRangePair(A13, A12, 10); // fix these vals
+  RightRangePair = new IRRangePair(A15, A14, 10);
   battery = new Battery();
 
   //Serial Pointer
@@ -70,13 +70,22 @@ void Initialising(float deltaT)
 
 void Driving(float deltaT)
 {
-  chassis->SetSpeed(100, 0, 0);
-  chassis->Run(deltaT);
-  sonarSensor->Run();
+    //A13 = LeftDist1 LeftRangePair->getDist1() Not working above 45cm
+    //A12 = LeftDist2 LeftRangePair->getDist2()
+    //A15 = RightDist1 RightRangePair->getDist1()
+    //A14 = RightDist2 RightRangePair->getDist2()
 
-  if(sonarSensor->GetDist() < 100){
+    LeftRangePair->Run();
+    RightRangePair->Run();
+
+    Serial.print("A15 ");
+    Serial.println(RightRangePair->getDist1());
+   
+
+
+  /*if(sonarSensor->GetDist() < 100){
     state = BLOWING;
-  }
+  }*/
   // Do driving things        ex) Motor.SetSpeed(x_speed, y_speed, z_speed)
 
   // Change state if necessary:
