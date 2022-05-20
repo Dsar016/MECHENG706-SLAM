@@ -3,12 +3,10 @@
 
 Turret::Turret(int scanAngle)
 {
-    /*pinMode(FAN_PIN, OUTPUT);
-    pinMode(IR_PIN1, INPUT);
-    pinMode(IR_PIN2, INPUT);
-    pinMode(IR_PIN3, INPUT);
-    pinMode(IR_PIN4, INPUT);*/
-    Serial.begin(115200);
+    pinMode(FAN_PIN, OUTPUT);
+    for (int i = 0; i < sizeof(PT_PINS); i++){
+        pinMode(PT_PINS[i], INPUT);
+    }
     
     m_MinAngle = 1500 - (600.0/90.0)*scanAngle;
     m_MaxAngle = 1500 + (600.0/90.0)*scanAngle;
@@ -21,32 +19,24 @@ Turret::Turret(int scanAngle)
 
 void Turret::Run(int deltaT)
 {
-    
-    /*if(!m_fireDetected){
-        m_fireDetected = RunScan();
-    }
-    else{
+    UpdatePTState();            
+    SetFan(m_fireDetected);   
+    if(m_fireDetected){
         ExtinguishFire();
-    }*/
-    //delay(20);
+    }
     RunScan(deltaT);
 }
 
+/**
+ * @brief updates servo target position based on rotation direction and min/max rotate angles
+ */
 bool Turret::RunScan(int deltaT)
 {
     m_TimeRunning += deltaT;  
-    //if(m_TimeRunning <= 0) return; //increase this number to slow down scan speed
+    if(m_TimeRunning <= 0) return; //increase this number to slow down response speed
     
-    //Update Servo Position
     int currentPos = m_turretServo.readMicroseconds();
-    /*if (currentPos - 50 < m_MinAngle){
-      m_turretServo.writeMicroseconds(m_MaxAngle);
-    }
-    else{
-      m_turretServo.writeMicroseconds(m_MinAngle);
-    }
-    m_TimeRunning = 0;*/
-    //Serial.println(currentPos);
+
     if (currentPos + m_currentDir < m_MinAngle){
         m_currentDir = LEFT;
     } 
@@ -56,20 +46,47 @@ bool Turret::RunScan(int deltaT)
 
     m_turretServo.writeMicroseconds(currentPos + m_currentDir);
     m_TimeRunning = 0;
-
-    //check for fire
-    float threshold = 0; //brightness threshold for determining. 
-    
-    //check each IR diode, if one is above the threshold. Print true
-
-    // if(IRx > threshold){
-    //     return true;
-    // }
 }
 
+/**
+ * @brief sets turret rotate direction towards brightest light source 
+ */
 bool Turret::ExtinguishFire()
 {
-    //contstantly position Servo towards brightest spot
-    //Turn on fan
-    //once brightness threshold is dropped, stop fan, m_fireDetected = false
+    int rightBias = 0, leftBias = 0;
+    int n = sizeof(m_currentPTState);
+
+    int i;
+    for (i = 0; i < (int)(n/2); i++){
+        rightBias += m_currentPTState[i];
+    }
+    for (i++; i < n-(int)(n/2); i++){
+       leftBias += m_currentPTState[i];
+    }
+
+    if(rightBias == leftBias)       {m_currentDir = STRAIGHT;}
+    else if(rightBias > leftBias)   { m_currentDir = RIGHT;}
+    else if(rightBias < leftBias)   {m_currentDir = LEFT;}
+}
+
+/**
+ * @brief checks all phototransistors and writes their states to an array.
+ * if any states are high, raises fire-detected flag
+ */
+bool Turret::UpdatePTState()
+{
+    m_fireDetected = false;
+    for (int i = 0; i < sizeof(m_currentPTState); i++){
+        m_currentPTState[i] = digitalRead(PT_PINS[i]);
+        if(m_currentPTState[i] == 1){
+            m_fireDetected = true;
+        }
+    }
+}
+
+void Turret::SetFan(bool on)
+{
+    if(digitalRead(FAN_PIN) != on){
+        digitalWrite(FAN_PIN, on);
+    }
 }

@@ -16,13 +16,11 @@ class Turret
 
     private: //PRIVATE_MEMBERS_______________________________________________________________________________________
 
-        const short
-        SERVO_PIN = 2,
-        FAN_PIN = 0, 
-        IR_PIN1 = 0, 
-        IR_PIN2 = 0,
-        IR_PIN3 = 0,
-        IR_PIN4 = 0;
+        const short SERVO_PIN = 21;
+        const short FAN_PIN = 0;
+
+        const short PT_PINS[4] = {0, 0, 0, 0};
+        int m_currentPTState[4] = {1,1,1,1};
 
         int m_MinAngle = 600; //0deg 
         int m_MaxAngle = 2400; //180deg
@@ -30,6 +28,7 @@ class Turret
         Servo m_turretServo;
         enum direct{
             RIGHT = -1,
+            STRAIGHT = 0,
             LEFT = 1
         };
         direct m_currentDir;
@@ -38,8 +37,9 @@ class Turret
         bool m_fireDetected = false;
         
         bool RunScan(int deltaT);
-
         bool ExtinguishFire();
-
+        float CalculateFireAngle();
+        bool UpdatePTState(); //return true if val above threshold
+        void SetFan(bool on);
 };
 #endif
