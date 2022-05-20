@@ -14,6 +14,8 @@ class Turret
 
         void Run(int deltaT);
 
+        bool m_fireDetected = false;
+
     private: //PRIVATE_MEMBERS_______________________________________________________________________________________
 
         const short SERVO_PIN = 21;
@@ -33,8 +35,6 @@ class Turret
         };
         direct m_currentDir;
         int m_TimeRunning; //stores the time in ms that the servo has been driving to its target
-
-        bool m_fireDetected = false;
         
         bool RunScan(int deltaT);
         bool ExtinguishFire();
