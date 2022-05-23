@@ -6,6 +6,7 @@
 #include "IRRangePair.h"
 #include "Battery.h"
 #include "Serial.h"
+#include "AvoidObstacle.h"
 
 extern SoftwareSerial* BluetoothSerial = new SoftwareSerial(BLUETOOTH_RX, BLUETOOTH_TX);
 
@@ -24,9 +25,10 @@ Chassis* chassis;
 Turret* turret;
 Gyro* gyro;
 SonarSensor* sonarSensor;
-IRRangePair* LeftRangePair;
+IRRangePair* FrontRangePair;
 IRRangePair* RightRangePair;
 Battery* battery;
+AvoidObstacle* avoidobstacle;
 
 void setup()
 {
@@ -36,9 +38,10 @@ void setup()
   turret = new Turret(45);
   gyro = new Gyro();
   sonarSensor = new SonarSensor();
-  LeftRangePair = new IRRangePair(A13, A12, 10); // fix these vals
+  FrontRangePair = new IRRangePair(A13, A12, 10); // fix these vals
   RightRangePair = new IRRangePair(A15, A14, 10);
   battery = new Battery();
+  avoidobstacle = new AvoidObstacle();
 
   //Serial Pointer
   // Setup the Serial port and pointer, the pointer allows switching the debug info through the USB port(Serial) or Bluetooth port(Serial1) with ease.
@@ -70,29 +73,16 @@ void Initialising(float deltaT)
 
 void Driving(float deltaT)
 {
-    //A13 = LeftDist1 LeftRangePair->getDist1() Not working above 45cm
-    //A12 = LeftDist2 LeftRangePair->getDist2()
-    //A15 = RightDist1 RightRangePair->getDist1()
-    //A14 = RightDist2 RightRangePair->getDist2()
-
-    LeftRangePair->Run();
+    // Update Sensors
+    FrontRangePair->Run();
     RightRangePair->Run();
+    sonarSensor->Run();
 
-    Serial.print("A15 ");
-    Serial.println(RightRangePair->getDist1());
-   
+    // Collision manager
+    avoidobstacle->Fuzzify(FrontRangePair->getDist1(), FrontRangePair->getDist2(), sonarSensor->GetDist(), RightRangePair->getDist1(), RightRangePair->getDist2());
 
-
-  /*if(sonarSensor->GetDist() < 100){
-    state = BLOWING;
-  }*/
-  // Do driving things        ex) Motor.SetSpeed(x_speed, y_speed, z_speed)
-
-  // Change state if necessary:
-  // if(turret.detectlight()){
-  //   state = BLOWING;
-  //   return;
-  // }
+    chassis->SetSpeed(0, 50*avoidobstacle->directionModifier, 0);
+    chassis->Run(10);
 }
 
 void Blowing(float deltaT)
