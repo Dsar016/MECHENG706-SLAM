@@ -81,7 +81,7 @@ void Driving(float deltaT)
     // Collision manager
     avoidobstacle->Fuzzify(FrontRangePair->getDist1(), FrontRangePair->getDist2(), sonarSensor->GetDist(), RightRangePair->getDist1(), RightRangePair->getDist2());
 
-    chassis->SetSpeed(0, 50*avoidobstacle->directionModifier, 0);
+    chassis->SetSpeed(100-avoidobstacle->back, 50*avoidobstacle->right, 0);
     chassis->Run(10);
 }
 

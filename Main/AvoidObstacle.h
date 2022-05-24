@@ -6,11 +6,12 @@
 class AvoidObstacle
 {
     public: //PUBLIC_MEMBERS_______________________________________________________________________________________
-        double directionModifier; // Value between -1 and 1 (continuous) indicating direction to drive
+        double right; // Value between -1 and 1 (continuous) indicating direction to drive
                                       // -1 means drive left. 1 means drive right. 0 means no obstacles
+        double back;
         AvoidObstacle();
         // Update direction modifier
-        void Fuzzify(double LeftFIR, double RightFIR, double Sonar, double FrontRIR, double BackRIR);
+        void Fuzzify(double LeftIR, double LeftFIR, double Sonar, double RightFIR, double RightIR);
 
     private: //PRIVATE_MEMBERS_______________________________________________________________________________________
         double minDist = 6; // Distance at which robot needs to move away from object
@@ -18,6 +19,5 @@ class AvoidObstacle
         
         double Near(double distance);
         double Far(double distance);
-        double Defuzzify(double Left, double Right);
 };
 #endif
