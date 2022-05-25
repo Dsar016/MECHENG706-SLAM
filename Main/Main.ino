@@ -70,7 +70,8 @@ void Initialising(float deltaT)
 
 void Driving(float deltaT)
 {
-  chassis->SetSpeed(100, 0, 0);
+  turret->Run(deltaT);
+  /*chassis->SetSpeed(100, 0, 0);
   chassis->Run(deltaT);
   sonarSensor->Run();
 
@@ -83,7 +84,7 @@ void Driving(float deltaT)
   // if(turret.detectlight()){
   //   state = BLOWING;
   //   return;
-  // }
+  // }*/
 }
 
 void Blowing(float deltaT)

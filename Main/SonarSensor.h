@@ -20,7 +20,6 @@ class SonarSensor
 
         //min 10 microsecond overhead  fix this
         void UpdateDist();
-
-
 };
 #endif
+

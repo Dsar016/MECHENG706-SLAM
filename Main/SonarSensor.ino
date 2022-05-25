@@ -1,9 +1,6 @@
 #include "SonarSensor.h"
 
-SonarSensor::SonarSensor()
-{
-
-}
+SonarSensor::SonarSensor(){}
 
 //min 10 micro overhead
 void SonarSensor::Run()
