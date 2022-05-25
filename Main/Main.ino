@@ -70,20 +70,7 @@ void Initialising(float deltaT)
 
 void Driving(float deltaT)
 {
-  chassis->SetSpeed(100, 0, 0);
-  chassis->Run(deltaT);
-  sonarSensor->Run();
-
-  if(sonarSensor->GetDist() < 100){
-    state = BLOWING;
-  }
-  // Do driving things        ex) Motor.SetSpeed(x_speed, y_speed, z_speed)
-
-  // Change state if necessary:
-  // if(turret.detectlight()){
-  //   state = BLOWING;
-  //   return;
-  // }
+  turret->Run(deltaT);
 }
 
 void Blowing(float deltaT)

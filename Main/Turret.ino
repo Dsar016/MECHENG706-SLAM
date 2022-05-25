@@ -77,7 +77,7 @@ bool Turret::UpdatePTState()
 {
     m_fireDetected = false;
     for (int i = 0; i < sizeof(m_currentPTState); i++){
-        m_currentPTState[i] = digitalRead(PT_PINS[i]);
+        m_currentPTState[i] = 1-digitalRead(PT_PINS[i]);
         if(m_currentPTState[i] == 1){
             m_fireDetected = true;
         }
