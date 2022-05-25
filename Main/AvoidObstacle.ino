@@ -28,10 +28,14 @@ void AvoidObstacle::Fuzzify(double LeftIR, double LeftFIR, double Sonar, double 
 
   // Inference
   double Right, Left;
-  Left = (L[1] + LF[1] + RF[0] + R[0])/4;
-  Right = (R[1] + RF[1] + LF[0] + L[0])/4;
-  this->back = (LF[0] + S[0] + RF[0])/3;
+  //Left = (L[1] + LF[1] + RF[0] + R[0])/4;
+  //Right = (R[1] + RF[1] + LF[0] + L[0])/4;
+  //this->back = (LF[0] + S[0] + RF[0])/3;
 
+  Left = (LF[1] + RF[0])/2;
+  Right = (RF[1] + LF[0])/2;
+  this->back = (LF[0] + S[0] + RF[0])/3;
+  
   this->right = Right-Left;
   return;
 }

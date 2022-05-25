@@ -25,7 +25,7 @@ Chassis* chassis;
 Turret* turret;
 Gyro* gyro;
 SonarSensor* sonarSensor;
-IRRangePair* FrontRangePair;
+IRRangePair* LeftRangePair;
 IRRangePair* RightRangePair;
 Battery* battery;
 AvoidObstacle* avoidobstacle;
@@ -38,7 +38,7 @@ void setup()
   turret = new Turret(45);
   gyro = new Gyro();
   sonarSensor = new SonarSensor();
-  FrontRangePair = new IRRangePair(A13, A12, 10); // fix these vals
+  LeftRangePair = new IRRangePair(A13, A12, 10); // fix these vals
   RightRangePair = new IRRangePair(A15, A14, 10);
   battery = new Battery();
   avoidobstacle = new AvoidObstacle();
@@ -73,15 +73,18 @@ void Initialising(float deltaT)
 
 void Driving(float deltaT)
 {
+ 
     // Update Sensors
-    FrontRangePair->Run();
+    LeftRangePair->Run();
     RightRangePair->Run();
     sonarSensor->Run();
 
     // Collision manager
-    avoidobstacle->Fuzzify(FrontRangePair->getDist1(), FrontRangePair->getDist2(), sonarSensor->GetDist(), RightRangePair->getDist1(), RightRangePair->getDist2());
-
-    chassis->SetSpeed(100-avoidobstacle->back, 50*avoidobstacle->right, 0);
+    avoidobstacle->Fuzzify(LeftRangePair->getDist1(), LeftRangePair->getDist2(), sonarSensor->GetDist(), RightRangePair->getDist1(), RightRangePair->getDist2());
+    
+    Serial.println(avoidobstacle->right);
+    
+    chassis->SetSpeed(5 - (10 * avoidobstacle->back),6*avoidobstacle->right,0);
     chassis->Run(10);
 }
 
