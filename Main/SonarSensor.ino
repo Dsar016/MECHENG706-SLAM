@@ -9,7 +9,6 @@ SonarSensor::SonarSensor()
 void SonarSensor::Run()
 {
     UpdateDist();
-    Serial.println(digitalRead(TRIG_PIN));
 }
 
 void SonarSensor::UpdateDist()
