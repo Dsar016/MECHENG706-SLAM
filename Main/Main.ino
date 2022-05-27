@@ -6,6 +6,7 @@
 #include "IRRangePair.h"
 #include "Battery.h"
 #include "Serial.h"
+#include "AvoidObstacle.h"
 
 extern SoftwareSerial* BluetoothSerial = new SoftwareSerial(BLUETOOTH_RX, BLUETOOTH_TX);
 
@@ -27,6 +28,7 @@ SonarSensor* sonarSensor;
 IRRangePair* LeftRangePair;
 IRRangePair* RightRangePair;
 Battery* battery;
+AvoidObstacle* avoidobstacle;
 
 void setup()
 {
@@ -36,9 +38,10 @@ void setup()
   turret = new Turret(45);
   gyro = new Gyro();
   sonarSensor = new SonarSensor();
-  LeftRangePair = new IRRangePair(A13, A12, 10); // fix these vals
+  LeftRangePair = new IRRangePair(A12, A13, 10);
   RightRangePair = new IRRangePair(A15, A14, 10);
   battery = new Battery();
+  avoidobstacle = new AvoidObstacle();
 
   //Serial Pointer
   // Setup the Serial port and pointer, the pointer allows switching the debug info through the USB port(Serial) or Bluetooth port(Serial1) with ease.
@@ -70,37 +73,44 @@ void Initialising(float deltaT)
 
 void Driving(float deltaT)
 {
-    //A13 = LeftDist1 LeftRangePair->getDist1() Not working above 45cm
-    //A12 = LeftDist2 LeftRangePair->getDist2()
-    //A15 = RightDist1 RightRangePair->getDist1()
-    //A14 = RightDist2 RightRangePair->getDist2()
-
+ 
+    // Update Sensors
     LeftRangePair->Run();
     RightRangePair->Run();
+    sonarSensor->Run();
 
-    Serial.print("A15 ");
-    Serial.println(RightRangePair->getDist1());
-   
+    // Collision manager
+    avoidobstacle->Fuzzify(LeftRangePair->getDist1(), LeftRangePair->getDist2(), sonarSensor->GetDist(), RightRangePair->getDist1(), RightRangePair->getDist2());
 
-
-  /*if(sonarSensor->GetDist() < 100){
-    state = BLOWING;
-  }*/
-  // Do driving things        ex) Motor.SetSpeed(x_speed, y_speed, z_speed)
-
-  // Change state if necessary:
-  // if(turret.detectlight()){
-  //   state = BLOWING;
-  //   return;
-  // }
+    // Light Tracking
+    //turret->Run(deltaT);
+    
+    //Serial.print("Right: ");
+    //Serial.println(avoidobstacle->right);
+    //Serial.print("Back: ");
+    //Serial.println(avoidobstacle->back);
+    Serial.println(sonarSensor->GetDist());
+    
+    //chassis->SetSpeed(5*(2 - 2 * avoidobstacle->back),10*avoidobstacle->right,0);
+    
+    
+    // Update Speeds
+    //chassis->SetSpeed(5*(2 - 2 * avoidobstacle->back),10*avoidobstacle->right,turret->turnAmount);
+    chassis->Run(10);
 }
 
 void Blowing(float deltaT)
 {
-
+  turret->ExtinguishFire();
+  turret->firesOut += 1;
+  if (turret->firesOut < 2) {
+    state = DRIVING;
+  } else {
+    state = STOPPING;
+  }
 }
 
 void Stopping(float deltaT)
 {
-  //disable_motors();
+  chassis->StopMotors();
 }

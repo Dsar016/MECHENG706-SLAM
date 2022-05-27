@@ -17,18 +17,12 @@ Turret::Turret(int scanAngle)
     m_turretServo.writeMicroseconds(1500); //reset servo to straight
 
     m_currentDir = RIGHT;
+
+    firesOut = 0;
 }
 
 void Turret::Run(int deltaT)
 {
-    
-    /*if(!m_fireDetected){
-        m_fireDetected = RunScan();
-    }
-    else{
-        ExtinguishFire();
-    }*/
-    //delay(20);
     RunScan(deltaT);
 }
 
@@ -67,7 +61,7 @@ bool Turret::RunScan(int deltaT)
     // }
 }
 
-bool Turret::ExtinguishFire()
+void Turret::ExtinguishFire()
 {
     //contstantly position Servo towards brightest spot
     //Turn on fan

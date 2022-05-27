@@ -24,6 +24,8 @@ class Chassis
 
         void ResetOdometry();
 
+        void StopMotors();
+
     private: //PRIVATE_MEMBERS_______________________________________________________________________________________
 
         enum DIRECTION {
@@ -73,7 +75,5 @@ class Chassis
 
         /* reattaches all motors to GPIO pins. Sets GPIO pinmodes to input */
         void EnableMotors();
-
-        void StopMotors();
 };
 #endif
