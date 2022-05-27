@@ -2,34 +2,55 @@
 
 SonarSensor::SonarSensor()
 {
-  
+  pinMode(TRIG_PIN, OUTPUT);
+  digitalWrite(TRIG_PIN, LOW);
 }
 
 //min 10 micro overhead
 void SonarSensor::Run()
 {
-    UpdateDist();
-}
+  unsigned long t1;
+  unsigned long t2;
+  unsigned long pulse_width;
+  float cm;
 
-void SonarSensor::UpdateDist()
-{
-    unsigned long t1, t2;
-    unsigned long pulse_width;
+  // Hold the trigger pin high for at least 10 us
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
 
-    digitalWrite(TRIG_PIN, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(TRIG_PIN, LOW);
-
-    // Wait for pulse on echo pin
-    t1 = micros();
-    while (digitalRead(ECHO_PIN) == 0);
-
+  // Wait for pulse on echo pin
+  t1 = micros();
+  while ( digitalRead(ECHO_PIN) == 0 ) {
     t2 = micros();
     pulse_width = t2 - t1;
-    if (pulse_width > (MAX_DIST)) currentDist = static_cast<float>(MAX_DIST);
+    if ( pulse_width > (MAX_DIST + 1000)) {
+      currentDist = MAX_DIST;
+      return;
+    }
+  }
 
-    // Calculate distance in centimeters. The constants
-    // are found in the datasheet, and calculated from the assumed speed
-    //of sound in air at sea level (~340 m/s).
-    currentDist = pulse_width / 58.0; //cm
+  // Measure how long the echo pin was held high (pulse width)
+  // Note: the micros() counter will overflow after ~70 min
+
+  t1 = micros();
+  while ( digitalRead(ECHO_PIN) == 1)
+  {
+    t2 = micros();
+    pulse_width = t2 - t1;
+    if ( pulse_width > (MAX_DIST + 1000) ) {
+      currentDist = MAX_DIST;
+      return;
+    }
+  }
+
+  t2 = micros();
+  pulse_width = t2 - t1;
+
+  // Calculate distance in centimeters and inches. The constants
+  // are found in the datasheet, and calculated from the assumed speed
+  //of sound in air at sea level (~340 m/s).
+  cm = pulse_width / 58.0;
+
+  currentDist = cm;
 }

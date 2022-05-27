@@ -30,8 +30,7 @@ void AvoidObstacle::Fuzzify(double LeftIR, double LeftFIR, double Sonar, double 
   double Right, Left;
   Left = (L[1] + LF[1] + RF[0] + R[0])/4;
   Right = (R[1] + RF[1] + LF[0] + L[0])/4;
-  //this->back = (LF[0] + 2*S[0] + RF[0])/4;
-  this->back = S[0];
+  this->back = (LF[0] + 2*S[0] + RF[0])/4;
   
   //Left = (LF[1] + RF[0])/2;
   //Right = (RF[1] + LF[0])/2;
