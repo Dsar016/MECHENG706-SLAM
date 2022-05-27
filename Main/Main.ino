@@ -89,7 +89,7 @@ void Driving(float deltaT)
     //Serial.println(avoidobstacle->right);
     //Serial.print("Back: ");
     //Serial.println(avoidobstacle->back);
-    Serial.println(sonarSensor->GetDist());
+    //Serial.println(sonarSensor->GetDist());
     
     //chassis->SetSpeed(5*(2 - 2 * avoidobstacle->back),10*avoidobstacle->right,0);
     

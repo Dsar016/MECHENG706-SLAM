@@ -2,13 +2,14 @@
 
 SonarSensor::SonarSensor()
 {
-
+  
 }
 
 //min 10 micro overhead
 void SonarSensor::Run()
 {
     UpdateDist();
+    Serial.println(digitalRead(TRIG_PIN));
 }
 
 void SonarSensor::UpdateDist()
