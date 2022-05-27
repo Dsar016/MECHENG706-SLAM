@@ -14,6 +14,12 @@ class Turret
 
         void Run(int deltaT);
 
+        int firesOut; // The number of fires put out
+
+        void ExtinguishFire(); // Put out a fire
+
+        double turnAmount = 0; // z turn magnitude to get robot to drive to light
+
     private: //PRIVATE_MEMBERS_______________________________________________________________________________________
 
         const short
@@ -38,8 +44,6 @@ class Turret
         bool m_fireDetected = false;
         
         bool RunScan(int deltaT);
-
-        bool ExtinguishFire();
 
 };
 #endif

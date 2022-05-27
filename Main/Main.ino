@@ -38,7 +38,7 @@ void setup()
   turret = new Turret(45);
   gyro = new Gyro();
   sonarSensor = new SonarSensor();
-  LeftRangePair = new IRRangePair(A13, A12, 10); // fix these vals
+  LeftRangePair = new IRRangePair(A12, A13, 10);
   RightRangePair = new IRRangePair(A15, A14, 10);
   battery = new Battery();
   avoidobstacle = new AvoidObstacle();
@@ -81,19 +81,36 @@ void Driving(float deltaT)
 
     // Collision manager
     avoidobstacle->Fuzzify(LeftRangePair->getDist1(), LeftRangePair->getDist2(), sonarSensor->GetDist(), RightRangePair->getDist1(), RightRangePair->getDist2());
+
+    // Light Tracking
+    //turret->Run(deltaT);
     
-    Serial.println(avoidobstacle->right);
+    //Serial.print("Right: ");
+    //Serial.println(avoidobstacle->right);
+    //Serial.print("Back: ");
+    //Serial.println(avoidobstacle->back);
+    Serial.println(sonarSensor->GetDist());
     
-    chassis->SetSpeed(5 - (10 * avoidobstacle->back),6*avoidobstacle->right,0);
+    //chassis->SetSpeed(5*(2 - 2 * avoidobstacle->back),10*avoidobstacle->right,0);
+    
+    
+    // Update Speeds
+    //chassis->SetSpeed(5*(2 - 2 * avoidobstacle->back),10*avoidobstacle->right,turret->turnAmount);
     chassis->Run(10);
 }
 
 void Blowing(float deltaT)
 {
-
+  turret->ExtinguishFire();
+  turret->firesOut += 1;
+  if (turret->firesOut < 2) {
+    state = DRIVING;
+  } else {
+    state = STOPPING;
+  }
 }
 
 void Stopping(float deltaT)
 {
-  //disable_motors();
+  chassis->StopMotors();
 }
