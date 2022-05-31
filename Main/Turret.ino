@@ -92,6 +92,13 @@ bool Turret::UpdatePTState()
 void Turret::SetFan(bool on)
 {
     //if(digitalRead(FAN_PIN) != on){
-        digitalWrite(FAN_PIN, on);
-    //}
+        //digitalWrite(FAN_PIN, on);
+        
+// //Turn on fan with MOSFET for  seconds
+//       /* digitalWrite(MOSFETPIN, HIGH);
+//       delay(3000);
+//       digitalWrite(MOSFETPIN, LOW);
+//       delay(3000);*/
+      
+//     }
 }
