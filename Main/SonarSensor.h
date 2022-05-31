@@ -19,7 +19,6 @@ class SonarSensor
         const unsigned int MAX_DIST = 23200;
 
         //min 10 microsecond overhead  fix this
-        void UpdateDist();
 
 
 };

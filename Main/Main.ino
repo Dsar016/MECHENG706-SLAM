@@ -6,6 +6,7 @@
 #include "IRRangePair.h"
 #include "Battery.h"
 #include "Serial.h"
+#include "AvoidObstacle.h"
 
 extern SoftwareSerial* BluetoothSerial = new SoftwareSerial(BLUETOOTH_RX, BLUETOOTH_TX);
 
@@ -24,9 +25,10 @@ Chassis* chassis;
 Turret* turret;
 Gyro* gyro;
 SonarSensor* sonarSensor;
-IRRangePair* sideRangePair;
-IRRangePair* forwardRangePair;
+IRRangePair* LeftRangePair;
+IRRangePair* RightRangePair;
 Battery* battery;
+AvoidObstacle* avoidobstacle;
 
 void setup()
 {
@@ -36,9 +38,10 @@ void setup()
   turret = new Turret(45);
   gyro = new Gyro();
   sonarSensor = new SonarSensor();
-  sideRangePair = new IRRangePair(A15, A13, 10); // fix these vals
-  forwardRangePair = new IRRangePair(A14, A11, 10);
+  LeftRangePair = new IRRangePair(A12, A13, 10);
+  RightRangePair = new IRRangePair(A15, A14, 10);
   battery = new Battery();
+  avoidobstacle = new AvoidObstacle();
 
   //Serial Pointer
   // Setup the Serial port and pointer, the pointer allows switching the debug info through the USB port(Serial) or Bluetooth port(Serial1) with ease.
@@ -70,28 +73,43 @@ void Initialising(float deltaT)
 
 void Driving(float deltaT)
 {
-  chassis->SetSpeed(100, 0, 0);
-  chassis->Run(deltaT);
-  sonarSensor->Run();
+ 
+    // Update Sensors
+    LeftRangePair->Run();
+    RightRangePair->Run();
+    sonarSensor->Run();
 
-  if(sonarSensor->GetDist() < 100){
-    state = BLOWING;
-  }
-  // Do driving things        ex) Motor.SetSpeed(x_speed, y_speed, z_speed)
+    // Collision manager
+    avoidobstacle->Fuzzify(LeftRangePair->getDist1(), LeftRangePair->getDist2(), sonarSensor->GetDist(), RightRangePair->getDist1(), RightRangePair->getDist2());
 
-  // Change state if necessary:
-  // if(turret.detectlight()){
-  //   state = BLOWING;
-  //   return;
-  // }
+    // Light Tracking
+    //turret->Run(deltaT);
+    
+    //Serial.print("Right: ");
+    //Serial.println(avoidobstacle->right);
+    //Serial.print("Back: ");
+    //Serial.println(avoidobstacle->back);
+    
+    chassis->SetSpeed(3*(2 - 4 * avoidobstacle->back),8*avoidobstacle->right,0);
+    
+    
+    // Update Speeds
+    //chassis->SetSpeed(5*(2 - 2 * avoidobstacle->back),10*avoidobstacle->right,turret->turnAmount);
+    chassis->Run(10);
 }
 
 void Blowing(float deltaT)
 {
-
+  turret->ExtinguishFire();
+  turret->firesOut += 1;
+  if (turret->firesOut < 2) {
+    state = DRIVING;
+  } else {
+    state = STOPPING;
+  }
 }
 
 void Stopping(float deltaT)
 {
-  //disable_motors();
+  chassis->StopMotors();
 }

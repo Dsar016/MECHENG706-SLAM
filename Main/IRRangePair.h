@@ -13,6 +13,10 @@ class IRRangePair
 
         float getMeanDist();
 
+        float getDist1();
+
+        float getDist2();
+
         double KalmanFilter(double rawdata, double prev_est);
 
     private: //PRIVATE_MEMBERS_______________________________________________________________________________________
@@ -21,22 +25,22 @@ class IRRangePair
         const short IR_PIN_2;
         const float sep_length; //separation distance between IR range sensors
 
-        const double A12_Exponent = -1.024;
-        const double A12_Value = 2567.6;
-        const double A13_Exponent = -1.073;
-        const double A13_Value = 7402.8;
-        const double A14_Exponent = -0.976;
-        const double A14_Value = 1978.5;
-        const double A15_Exponent = -1.151;
-        const double A15_Value = 12293;
+        const double A12_Exponent = -0.992;
+        const double A12_Value = 2256.1;
+        const double A13_Exponent = -1.261;
+        const double A13_Value = 22388;
+        const double A14_Exponent = -0.963;
+        const double A14_Value = 1933.2;
+        const double A15_Exponent = -1.191;
+        const double A15_Value = 15714;
 
         float currentDist1 = 0;
         float currentDist2 = 0;
         
         //Kalman Filter values
-        double last_est_1 = 0;
+        double last_est_1 = 15;
 
-        double last_est_2 = 0;
+        double last_est_2 = 15;
 
         //Might make this diffent for each Kalman Filter
         double last_var = 999;
