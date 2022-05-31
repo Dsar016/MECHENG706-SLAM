@@ -5,7 +5,7 @@ class SLAM
         {
             StoreCurrentState();
             SystemState* state = &state_list[state_index % n]
-            Expected
+            
             
             
         }

@@ -14,21 +14,16 @@ class Turret
 
         void Run(int deltaT);
 
-        int firesOut; // The number of fires put out
-
-        void ExtinguishFire(); // Put out a fire
-
-        double turnAmount = 0; // z turn magnitude to get robot to drive to light
+        bool m_fireDetected = false;
 
     private: //PRIVATE_MEMBERS_______________________________________________________________________________________
 
-        const short
-        SERVO_PIN = 2,
-        FAN_PIN = 0, 
-        IR_PIN1 = 0, 
-        IR_PIN2 = 0,
-        IR_PIN3 = 0,
-        IR_PIN4 = 0;
+        const short SERVO_PIN = 22;
+        const short FAN_PIN = 26;
+
+        const short PT_NUM = 4;
+        const int PT_PINS[4] = {7, 6, 5, 4};
+        int m_currentPTState[4] = {1,1,1,1};
 
         int m_MinAngle = 600; //0deg 
         int m_MaxAngle = 2400; //180deg
@@ -36,14 +31,16 @@ class Turret
         Servo m_turretServo;
         enum direct{
             RIGHT = -1,
+            STRAIGHT = 0,
             LEFT = 1
         };
         direct m_currentDir;
         int m_TimeRunning; //stores the time in ms that the servo has been driving to its target
-
-        bool m_fireDetected = false;
         
         bool RunScan(int deltaT);
-
+        bool ExtinguishFire();
+        float CalculateFireAngle();
+        bool UpdatePTState(); //return true if val above threshold
+        void SetFan(bool on);
 };
 #endif
