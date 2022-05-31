@@ -18,10 +18,11 @@ class Turret
 
     private: //PRIVATE_MEMBERS_______________________________________________________________________________________
 
-        const short SERVO_PIN = 21;
-        const short FAN_PIN = 0;
+        const short SERVO_PIN = 22;
+        const short FAN_PIN = 26;
 
-        const short PT_PINS[4] = {0, 0, 0, 0};
+        const short PT_NUM = 4;
+        const int PT_PINS[4] = {7, 6, 5, 4};
         int m_currentPTState[4] = {1,1,1,1};
 
         int m_MinAngle = 600; //0deg 

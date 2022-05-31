@@ -3,10 +3,10 @@
 
 Turret::Turret(int scanAngle)
 {
-    pinMode(FAN_PIN, OUTPUT);
-    for (int i = 0; i < sizeof(PT_PINS); i++){
+    //pinMode(FAN_PIN, OUTPUT);
+    /*for (int i = 0; i < sizeof(PT_PINS); i++){
         pinMode(PT_PINS[i], INPUT);
-    }
+    }*/
     
     m_MinAngle = 1500 - (600.0/90.0)*scanAngle;
     m_MaxAngle = 1500 + (600.0/90.0)*scanAngle;
@@ -19,11 +19,18 @@ Turret::Turret(int scanAngle)
 
 void Turret::Run(int deltaT)
 {
-    UpdatePTState();            
-    SetFan(m_fireDetected);   
+    digitalWrite(26, HIGH);
+    UpdatePTState(); 
+    //ExtinguishFire();
+    Serial.println(m_fireDetected);           
+    //SetFan(m_fireDetected);   
     if(m_fireDetected){
-        ExtinguishFire();
+         ExtinguishFire();
     }
+    else if(m_currentDir == STRAIGHT){
+        m_currentDir = RIGHT;
+    }
+    
     RunScan(deltaT);
 }
 
@@ -43,7 +50,6 @@ bool Turret::RunScan(int deltaT)
     else if (currentPos + m_currentDir > m_MaxAngle){
         m_currentDir = RIGHT;
     }
-
     m_turretServo.writeMicroseconds(currentPos + m_currentDir);
     m_TimeRunning = 0;
 }
@@ -54,14 +60,13 @@ bool Turret::RunScan(int deltaT)
 bool Turret::ExtinguishFire()
 {
     int rightBias = 0, leftBias = 0;
-    int n = sizeof(m_currentPTState);
 
-    int i;
-    for (i = 0; i < (int)(n/2); i++){
-        rightBias += m_currentPTState[i];
+    int i = 0;
+    for (i; i < (int)(PT_NUM/2); i++){
+        leftBias += m_currentPTState[i];
     }
-    for (i++; i < n-(int)(n/2); i++){
-       leftBias += m_currentPTState[i];
+    for (i; i < PT_NUM; i++){
+       rightBias += m_currentPTState[i];
     }
 
     if(rightBias == leftBias)       {m_currentDir = STRAIGHT;}
@@ -76,7 +81,7 @@ bool Turret::ExtinguishFire()
 bool Turret::UpdatePTState()
 {
     m_fireDetected = false;
-    for (int i = 0; i < sizeof(m_currentPTState); i++){
+    for (int i = 0; i < PT_NUM; i++){
         m_currentPTState[i] = 1-digitalRead(PT_PINS[i]);
         if(m_currentPTState[i] == 1){
             m_fireDetected = true;
@@ -86,7 +91,7 @@ bool Turret::UpdatePTState()
 
 void Turret::SetFan(bool on)
 {
-    if(digitalRead(FAN_PIN) != on){
+    //if(digitalRead(FAN_PIN) != on){
         digitalWrite(FAN_PIN, on);
-    }
+    //}
 }
