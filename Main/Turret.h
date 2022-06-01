@@ -13,13 +13,14 @@ class Turret
         Turret(int scanAngle);
 
         void Run(int deltaT);
+        int GetFireDirection();
 
         bool m_fireDetected = false;
 
     private: //PRIVATE_MEMBERS_______________________________________________________________________________________
 
         const short SERVO_PIN = 22;
-        const short FAN_PIN = 26;
+        const short FAN_PIN = 34;
 
         const short PT_NUM = 4;
         const int PT_PINS[4] = {7, 6, 5, 4};

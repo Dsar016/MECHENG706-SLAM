@@ -3,10 +3,7 @@
 
 Turret::Turret(int scanAngle)
 {
-    //pinMode(FAN_PIN, OUTPUT);
-    /*for (int i = 0; i < sizeof(PT_PINS); i++){
-        pinMode(PT_PINS[i], INPUT);
-    }*/
+    pinMode(FAN_PIN, OUTPUT);
     
     m_MinAngle = 1500 - (600.0/90.0)*scanAngle;
     m_MaxAngle = 1500 + (600.0/90.0)*scanAngle;
@@ -16,16 +13,17 @@ Turret::Turret(int scanAngle)
 
     m_currentDir = RIGHT;
 
-    firesOut = 0;
+    digitalWrite(FAN_PIN, LOW);
+
 }
 
 void Turret::Run(int deltaT)
 {
-    digitalWrite(26, HIGH);
     UpdatePTState(); 
     //ExtinguishFire();
-    Serial.println(m_fireDetected);           
-    //SetFan(m_fireDetected);   
+    //Serial.println(m_fireDetected);   
+    GetFireDirection();       
+    SetFan(m_fireDetected);   
     if(m_fireDetected){
          ExtinguishFire();
     }
@@ -52,7 +50,7 @@ bool Turret::RunScan(int deltaT)
     else if (currentPos + m_currentDir > m_MaxAngle){
         m_currentDir = RIGHT;
     }
-    m_turretServo.writeMicroseconds(currentPos + m_currentDir);
+    m_turretServo.writeMicroseconds(currentPos + 5*m_currentDir);
     m_TimeRunning = 0;
 }
 
@@ -91,16 +89,33 @@ bool Turret::UpdatePTState()
     }
 }
 
+int Turret::GetFireDirection(){
+  if(!m_fireDetected){
+    //return STRAIGHT
+    //Serial.println("STRAIGHT");
+    return STRAIGHT;
+  }
+  
+  int straightAngle = 10;
+  int straightMin = 1500 - (600.0/90.0)*straightAngle;
+  int straightMax = 1500 + (600.0/90.0)*straightAngle;
+  /*Serial.print(straightMin);
+  Serial.print(" ");
+  Serial.print(straightMax);
+  Serial.print(" ");*/
+
+  int currentPos = m_turretServo.readMicroseconds();
+  /*Serial.print(currentPos);
+  Serial.print(" ");*/
+
+
+  if(currentPos > straightMin && currentPos < straightMax){/*Serial.println("STRAIGHT");*/ return STRAIGHT;}
+  else if(currentPos < 1500){/*Serial.println("RIGHT");*/ return RIGHT;}
+  else if(currentPos > 1500){/*Serial.println("LEFT");*/ return LEFT;}
+}
+
 void Turret::SetFan(bool on)
 {
-    //if(digitalRead(FAN_PIN) != on){
-        //digitalWrite(FAN_PIN, on);
-        
-// //Turn on fan with MOSFET for  seconds
-//       /* digitalWrite(MOSFETPIN, HIGH);
-//       delay(3000);
-//       digitalWrite(MOSFETPIN, LOW);
-//       delay(3000);*/
-      
-//     }
+  if(on){digitalWrite(FAN_PIN, HIGH);}
+  else{digitalWrite(FAN_PIN, LOW);}       
 }
