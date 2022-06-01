@@ -14,9 +14,8 @@ enum STATE {
   INITIALISING,
   SCAN360,
   DRIVING,
-  BLOWING,
+  WALLTURN,
   STOPPING, 
-  TA_ELIMINATE
 };
 
 STATE state;
@@ -58,7 +57,7 @@ void loop()
     case INITIALISING :   Initialising(deltaT);       break;
     case SCAN360 :        Scan360(deltaT);            break;
     case DRIVING :        Driving(deltaT);            break;
-    case BLOWING :        Blowing(deltaT);            break;
+    case WALLTURN :       WallTurn(deltaT);           break;
     case STOPPING :       Stopping(deltaT);           break;
   } 
   delay(deltaT);
@@ -90,6 +89,10 @@ void Driving(float deltaT)
     RightRangePair->Run();
     sonarSensor->Run();
 
+    if(LeftRangePair->getDist1() < 10 && RightRangePair->getDist1() < 10 && sonarSensor->GetDist() < 10){
+      state = WALLTURN;
+    }
+
     // Collision manager
     avoidobstacle->Fuzzify(LeftRangePair->getDist1(), LeftRangePair->getDist2(), sonarSensor->GetDist(), RightRangePair->getDist1(), RightRangePair->getDist2());
 
@@ -101,15 +104,18 @@ void Driving(float deltaT)
     chassis->Run(deltaT);
 }
 
-void Blowing(float deltaT)
+void WallTurn(float deltaT)
 {
-  // turret->ExtinguishFire();
-  // turret->firesOut += 1;
-  // if (turret->firesOut < 2) {
-  //   state = DRIVING;
-  // } else {
-  //   state = STOPPING;
-  // }
+  // Update Sensors
+  LeftRangePair->Run();
+  RightRangePair->Run();
+  sonarSensor->Run();
+  
+  chassis->SetSpeed(0, 0, 30);
+  if(LeftRangePair->getDist1() < 10 && RightRangePair->getDist1() < 10 && sonarSensor->GetDist() < 10){
+      state = DRIVING;
+  }
+  chassis->Run(deltaT);
 }
 
 void Stopping(float deltaT)
