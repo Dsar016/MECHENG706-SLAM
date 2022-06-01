@@ -15,6 +15,7 @@ class SonarSensor
         const int TRIG_PIN = 48;
         const int ECHO_PIN = 49;
         float currentDist = 0;
+        int ms_since_trig = 0;
 
         const unsigned int MAX_DIST = 23200;
 
