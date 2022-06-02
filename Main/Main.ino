@@ -21,6 +21,7 @@ enum STATE {
 STATE state, prevState;
 float deltaT = 1; //Running Period
 int msCounter0 = 0;
+int constant0 = 0;
 
 Chassis* chassis;
 Turret* turret;
@@ -37,7 +38,7 @@ void setup()
   prevState = INITIALISING;
 
   chassis = new Chassis();
-  turret = new Turret(90);
+  turret = new Turret(110);
   gyro = new Gyro();
   sonarSensor = new SonarSensor();
   LeftRangePair = new IRRangePair(A12, A13, 10);
@@ -64,7 +65,10 @@ void loop()
     case WALLTURN :       WallTurn(deltaT);           break;
     case STOPPING :       Stopping(deltaT);           break;
   } 
-  if(state != prevState){msCounter0 = 0;} //zero counters on state change
+  if(state != prevState){
+    msCounter0 = 0;
+    constant0 = 0;
+  } //zero counters on state change
   
   delay(deltaT);
 }
@@ -73,6 +77,7 @@ void Initialising(float deltaT)
 {
   // Check Battery
   battery->Check();
+  delay(2000);
   
   // Begin tasks
   state = SCAN360;
@@ -80,7 +85,8 @@ void Initialising(float deltaT)
 
 void Scan360(float deltaT)
 { 
-  if(msCounter0 > 5000){ //only scan for 5 seconds
+  if(constant0 == 0){constant0 = random(-1000, 1000);}
+  if(msCounter0 > 3000+constant0){ //scan for random amount of seconds
     state=DRIVING;
   }
   msCounter0 += deltaT;
@@ -98,17 +104,17 @@ void Scan360(float deltaT)
 
 void Driving(float deltaT)
 {
+    if(msCounter0 > 1500 && !turret->m_fireDetected){ //only scan for 5 seconds
+      state=SCAN360;
+    }
+    msCounter0 += deltaT;
+    
     // Update Sensors
     LeftRangePair->Run();
     RightRangePair->Run();
     sonarSensor->Run();
 
     turret->servoSpeed = 10;
-    //Serial.println(sonarSensor->GetDist());
-
-    /*if(LeftRangePair->getDist1() < 10 && RightRangePair->getDist1() < 10 && sonarSensor->GetDist() < 10){
-      state = WALLTURN;
-    } */
 
     // Collision manager
     avoidobstacle->Fuzzify(LeftRangePair->getDist1(), LeftRangePair->getDist2(), sonarSensor->GetDist(), RightRangePair->getDist1(), RightRangePair->getDist2());
@@ -117,8 +123,9 @@ void Driving(float deltaT)
     turret->Run(deltaT);
 
     // Update Speeds
-    chassis->SetSpeed(3*(2 - 4 * avoidobstacle->back),8*avoidobstacle->right, 30*turret->GetFireDirection());
-    //chassis->SetSpeed(6, 0, 0);
+    if(turret->m_fireReached){chassis->SetSpeed(0, 0, 0);}
+    else{chassis->SetSpeed(3*(2 - 4 * avoidobstacle->back),8*avoidobstacle->right, 30*turret->GetFireDirection());}
+    
     chassis->Run(deltaT);
 }
 

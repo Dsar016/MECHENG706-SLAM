@@ -16,6 +16,7 @@ class Turret
         int GetFireDirection();
 
         bool m_fireDetected = false;
+        bool m_fireReached = false;
 
         int servoSpeed = 5; 
 

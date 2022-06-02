@@ -19,9 +19,7 @@ Turret::Turret(int scanAngle)
 
 void Turret::Run(int deltaT)
 {
-    UpdatePTState(); 
-    //ExtinguishFire();
-    //Serial.println(m_fireDetected);   
+    UpdatePTState();  
     GetFireDirection();       
     SetFan(m_fireDetected);   
     if(m_fireDetected){
@@ -80,34 +78,27 @@ bool Turret::ExtinguishFire()
  */
 bool Turret::UpdatePTState()
 {
-    m_fireDetected = false;
+    m_fireDetected = false; m_fireReached = false;
     for (int i = 0; i < PT_NUM; i++){
         m_currentPTState[i] = 1-digitalRead(PT_PINS[i]);
         if(m_currentPTState[i] == 1){
             m_fireDetected = true;
         }
     }
+    if( (1-digitalRead(5)) || (1-digitalRead(6)) ){
+      m_fireReached = true;
+    }
 }
 
-int Turret::GetFireDirection(){
-  if(!m_fireDetected){
-    //return STRAIGHT
-    //Serial.println("STRAIGHT");
-    return STRAIGHT;
-  }
+int Turret::GetFireDirection()
+{
+  if(!m_fireDetected){return STRAIGHT;}
   
-  int straightThreshold = 15;
+  int straightThreshold = 10;
   int straightMin = m_StraightAngle - (600.0/90.0)*straightThreshold;
   int straightMax = m_StraightAngle + (600.0/90.0)*straightThreshold;
-  /*Serial.print(straightMin);
-  Serial.print(" ");
-  Serial.print(straightMax);
-  Serial.print(" ");*/
 
   int currentPos = m_turretServo.readMicroseconds();
-  /*Serial.print(currentPos);
-  Serial.print(" ");*/
-
 
   if(currentPos > straightMin && currentPos < straightMax){/*Serial.println("STRAIGHT");*/ return STRAIGHT;}
   else if(currentPos < 1500){/*Serial.println("RIGHT");*/ return RIGHT;}

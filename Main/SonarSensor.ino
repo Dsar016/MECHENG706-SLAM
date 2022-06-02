@@ -26,6 +26,7 @@ void SonarSensor::Run()
 float SonarSensor::Pulse()
 {
   unsigned long t1, t2, pulse_width;
+  float maxPulse = 58.0*maxDist;
 
   // Hold the trigger pin high for at least 10 us
   digitalWrite(TRIG_PIN, HIGH);
@@ -35,13 +36,13 @@ float SonarSensor::Pulse()
   t1 = micros(); t2 = micros();
   while (digitalRead(ECHO_PIN) == 0){
     t2 = micros();
-    if(t2 - t1 >= 11600){return 200.0f;}
+    if(t2 - t1 >= maxPulse){return maxDist;}
   }
   
   t1 = micros(); t2 = micros();
   while (digitalRead(ECHO_PIN) == 1){
     t2 = micros();
-    if(t2 - t1 >= 11600){return 200.0f;}
+    if(t2 - t1 >= maxPulse){return maxDist;}
   }
   
   return (t2 - t1) / 58.0;

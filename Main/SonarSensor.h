@@ -18,6 +18,7 @@ class SonarSensor
         int ms_since_trig = 0;
 
         const unsigned int MAX_DIST = 23200;
+        const int maxDist = 200;
 
         float Pulse();
 
