@@ -1,6 +1,5 @@
 #include "AvoidObstacle.h"
 #include <SoftwareSerial.h>
-#include "Serial.h"
 
 AvoidObstacle::AvoidObstacle() {this->right = 0;this->back = 0;}
 

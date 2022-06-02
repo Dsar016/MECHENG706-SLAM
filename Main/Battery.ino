@@ -1,6 +1,5 @@
 #include "Battery.h"
 #include <SoftwareSerial.h>
-#include "Serial.h"
 
 Battery::Battery() {}
 

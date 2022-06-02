@@ -21,7 +21,6 @@ int firesExtinguished = 0;
 
 Chassis* chassis;
 Turret* turret;
-Gyro* gyro;
 SonarSensor* sonarSensor;
 IRRangePair* LeftRangePair;
 IRRangePair* RightRangePair;
@@ -35,7 +34,6 @@ void setup()
 
   chassis = new Chassis();
   turret = new Turret(110);
-  gyro = new Gyro();
   sonarSensor = new SonarSensor();
   LeftRangePair = new IRRangePair(A12, A13, 10);
   RightRangePair = new IRRangePair(A15, A14, 10);
