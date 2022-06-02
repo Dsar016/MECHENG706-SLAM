@@ -21,36 +21,21 @@ void SonarSensor::Run()
   delayMicroseconds(10);
   digitalWrite(TRIG_PIN, LOW);
 
-  // Wait for pulse on echo pin
+  while (digitalRead(ECHO_PIN) == 0 ) {}
+  
   t1 = micros();
-  while ( digitalRead(ECHO_PIN) == 0 ) {
-    t2 = micros();
-    pulse_width = t2 - t1;
-    if (pulse_width > (MAX_DIST)) {
-      currentDist = MAX_DIST;
-      return;
-    }
-  }
-
-  // Measure how long the echo pin was held high (pulse width)
-  // Note: the micros() counter will overflow after ~70 min
-
-  t1 = micros();
-  while (digitalRead(ECHO_PIN) == 1)
-  {
-    t2 = micros();
-    pulse_width = t2 - t1;
-    if ( pulse_width > (MAX_DIST + 1000) ) {
-      currentDist = MAX_DIST;
-      return;
-    }
-  }
-
+  while (digitalRead(ECHO_PIN) == 1){}
   t2 = micros();
+  
   pulse_width = t2 - t1;
 
-  // Calculate distance in centimeters and inches. The constants
-  // are found in the datasheet, and calculated from the assumed speed
-  //of sound in air at sea level (~340 m/s).
+  prevDist = currentDist;
   currentDist = pulse_width / 58.0;
+
+  //add smoothing to ultrasonic reading
+  if(prevDist*10 < currentDist){
+      currentDist = prevDist*10;
+  }
+
+  
 }

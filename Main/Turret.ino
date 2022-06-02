@@ -96,7 +96,7 @@ int Turret::GetFireDirection(){
     return STRAIGHT;
   }
   
-  int straightThreshold = 10;
+  int straightThreshold = 15;
   int straightMin = m_StraightAngle - (600.0/90.0)*straightThreshold;
   int straightMax = m_StraightAngle + (600.0/90.0)*straightThreshold;
   /*Serial.print(straightMin);
