@@ -1,11 +1,9 @@
 //file includes
 #include "Chassis.h"
 #include "Turret.h"
-#include "Gyro.h"
 #include "SonarSensor.h"
 #include "IRRangePair.h"
 #include "Battery.h"
-#include "Serial.h"
 #include "AvoidObstacle.h"
 
 enum STATE {
