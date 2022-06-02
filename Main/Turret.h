@@ -14,6 +14,7 @@ class Turret
 
         void Run(int deltaT);
         int GetFireDirection();
+        void Straighten(){m_turretServo.writeMicroseconds(m_StraightAngle);}
 
         bool m_fireDetected = false;
         bool m_fireReached = false;

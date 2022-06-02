@@ -12,7 +12,6 @@ enum STATE {
   INITIALISING,
   SCAN360,
   DRIVING,
-  WALLTURN,
   STOPPING, 
 };
 
@@ -20,6 +19,7 @@ STATE state, prevState;
 float deltaT = 1; //Running Period
 int msCounter0 = 0;
 int constant0 = 0;
+int firesExtinguished = 0;
 
 Chassis* chassis;
 Turret* turret;
@@ -59,7 +59,6 @@ void loop()
     case INITIALISING :   Initialising(deltaT);       break;
     case SCAN360 :        Scan360(deltaT);            break;
     case DRIVING :        Driving(deltaT);            break;
-    case WALLTURN :       WallTurn(deltaT);           break;
     case STOPPING :       Stopping(deltaT);           break;
   } 
   if(state != prevState){
@@ -82,27 +81,30 @@ void Initialising(float deltaT)
 
 void Scan360(float deltaT)
 { 
+  // Scan for random amount of seconds
   if(constant0 == 0){constant0 = random(-1000, 1000);}
-  if(msCounter0 > 3000+constant0){ //scan for random amount of seconds
+  if(msCounter0 > 3000+constant0){
     state=DRIVING;
   }
   msCounter0 += deltaT;
 
+  // Handle turret
+  turret->Straighten();
   turret->servoSpeed = 0;
   turret->Run(deltaT);
-  
+
+  // Handle movement
   chassis->SetSpeed(0, 0, 50);
   if(turret->m_fireDetected){
-    chassis->SetSpeed(0, 0, 0);
     state = DRIVING;
-    //Serial.println("DRIVING");
   }
   chassis->Run(deltaT);
 }
 
 void Driving(float deltaT)
 {
-    if(msCounter0 > 1000 && !turret->m_fireDetected){ //only scan for 5 seconds
+    // Execute scan after certain driving time
+    if(msCounter0 > 1000 && !turret->m_fireDetected){
       state=SCAN360;
     }
     msCounter0 += deltaT;
@@ -112,12 +114,11 @@ void Driving(float deltaT)
     RightRangePair->Run();
     sonarSensor->Run();
 
-    turret->servoSpeed = 10;
-
     // Collision manager
     avoidobstacle->Fuzzify(LeftRangePair->getDist1(), LeftRangePair->getDist2(), sonarSensor->GetDist(), RightRangePair->getDist1(), RightRangePair->getDist2());
 
     // Handle Fire Tracking
+    turret->servoSpeed = 10;
     turret->Run(deltaT);
 
     // Update Speeds
@@ -128,23 +129,4 @@ void Driving(float deltaT)
     else{chassis->SetSpeed(3*(2 - 4 * avoidobstacle->back),8*avoidobstacle->right, 30*turret->GetFireDirection());}
     
     chassis->Run(deltaT);
-}
-
-void WallTurn(float deltaT)
-{
-  // Update Sensors
-  LeftRangePair->Run();
-  RightRangePair->Run();
-  sonarSensor->Run();
-
-  chassis->SetSpeed(0, 0, 30);
-  if(LeftRangePair->getDist1() < 10 && RightRangePair->getDist1() < 10 && sonarSensor->GetDist() < 10){
-      state = DRIVING;
-  }
-  chassis->Run(deltaT);
-}
-
-void Stopping(float deltaT)
-{
-  chassis->StopMotors();
 }
