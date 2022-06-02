@@ -46,7 +46,6 @@ void setup()
 
   // Setup the Serial port and pointer, the pointer allows switching the debug info through the USB port(Serial) or Bluetooth port(Serial1) with ease.
   Serial.begin(115200);
-  BluetoothSerial->begin(115200);
   Serial.println("ROBUSSY ROLLOUT");
   delay(2000);
 }
@@ -89,20 +88,21 @@ void Scan360(float deltaT)
   }
   msCounter0 += deltaT;
 
-  turret->servoSpeed = 5;
+  turret->servoSpeed = 0;
   turret->Run(deltaT);
   
   chassis->SetSpeed(0, 0, 50);
   if(turret->m_fireDetected){
     chassis->SetSpeed(0, 0, 0);
     state = DRIVING;
+    //Serial.println("DRIVING");
   }
   chassis->Run(deltaT);
 }
 
 void Driving(float deltaT)
 {
-    if(msCounter0 > 1500 && !turret->m_fireDetected){ //only scan for 5 seconds
+    if(msCounter0 > 1000 && !turret->m_fireDetected){ //only scan for 5 seconds
       state=SCAN360;
     }
     msCounter0 += deltaT;
@@ -121,7 +121,10 @@ void Driving(float deltaT)
     turret->Run(deltaT);
 
     // Update Speeds
-    if(turret->m_fireReached){chassis->SetSpeed(0, 0, 0);}
+    if(turret->m_fireReached){
+      turret->servoSpeed = 1;
+      chassis->SetSpeed(0, 0, 0);
+    }
     else{chassis->SetSpeed(3*(2 - 4 * avoidobstacle->back),8*avoidobstacle->right, 30*turret->GetFireDirection());}
     
     chassis->Run(deltaT);
