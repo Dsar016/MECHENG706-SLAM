@@ -18,8 +18,9 @@ enum STATE {
   STOPPING, 
 };
 
-STATE state;
+STATE state, prevState;
 float deltaT = 1; //Running Period
+int msCounter0 = 0;
 
 Chassis* chassis;
 Turret* turret;
@@ -33,6 +34,7 @@ AvoidObstacle* avoidobstacle;
 void setup()
 {
   state = INITIALISING;
+  prevState = INITIALISING;
 
   chassis = new Chassis();
   turret = new Turret(90);
@@ -43,7 +45,6 @@ void setup()
   battery = new Battery();
   avoidobstacle = new AvoidObstacle();
 
-  //Serial Pointer
   // Setup the Serial port and pointer, the pointer allows switching the debug info through the USB port(Serial) or Bluetooth port(Serial1) with ease.
   Serial.begin(115200);
   BluetoothSerial->begin(115200);
@@ -52,6 +53,8 @@ void setup()
 
 void loop()
 {
+  prevState = state;
+  
   switch(state)
   {
     case INITIALISING :   Initialising(deltaT);       break;
@@ -60,6 +63,8 @@ void loop()
     case WALLTURN :       WallTurn(deltaT);           break;
     case STOPPING :       Stopping(deltaT);           break;
   } 
+  if(state != prevState){msCounter0 = 0;} //zero counters on state change
+  
   delay(deltaT);
 }
 
@@ -67,12 +72,18 @@ void Initialising(float deltaT)
 {
   // Check Battery
   battery->Check();
-
+  
   // Begin tasks
   state = SCAN360;
 }
 
-void Scan360(float deltaT){
+void Scan360(float deltaT)
+{ 
+  if(msCounter0 > 5000){ //only scan for 5 seconds
+    state=DRIVING;
+  }
+  msCounter0 += deltaT;
+  
   turret->Run(deltaT);
   chassis->SetSpeed(0, 0, 50);
   if(turret->m_fireDetected){
@@ -110,7 +121,7 @@ void WallTurn(float deltaT)
   LeftRangePair->Run();
   RightRangePair->Run();
   sonarSensor->Run();
-  
+
   chassis->SetSpeed(0, 0, 30);
   if(LeftRangePair->getDist1() < 10 && RightRangePair->getDist1() < 10 && sonarSensor->GetDist() < 10){
       state = DRIVING;
