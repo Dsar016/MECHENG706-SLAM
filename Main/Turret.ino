@@ -9,7 +9,7 @@ Turret::Turret(int scanAngle)
     m_MaxAngle = m_StraightAngle + (600.0/90.0)*scanAngle;
 
     m_turretServo.attach(SERVO_PIN, m_MinAngle, m_MaxAngle); //, m_MinAngle, m_MaxAngle);
-    m_turretServo.writeMicroseconds(m_StraightAngle); //reset servo to straight
+    Straighten();
 
     m_currentDir = RIGHT;
 

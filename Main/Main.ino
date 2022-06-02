@@ -130,3 +130,8 @@ void Driving(float deltaT)
     
     chassis->Run(deltaT);
 }
+
+void Stopping(int deltaT)
+{
+  
+}
