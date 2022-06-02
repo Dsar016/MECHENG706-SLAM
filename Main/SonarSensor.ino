@@ -8,12 +8,23 @@ SonarSensor::SonarSensor()
 
 void SonarSensor::Run()
 {
-  if(ms_since_trig < 10){
+  if(ms_since_trig < 50){
     ms_since_trig++;
     return;
   }
   ms_since_trig = 0;
-  
+
+  prevDist = currentDist;
+  currentDist = Pulse();
+
+  //add smoothing to ultrasonic reading
+  if(prevDist+30 < currentDist){
+      currentDist = prevDist+30;
+  }
+}
+
+float SonarSensor::Pulse()
+{
   unsigned long t1, t2, pulse_width;
 
   // Hold the trigger pin high for at least 10 us
@@ -21,21 +32,17 @@ void SonarSensor::Run()
   delayMicroseconds(10);
   digitalWrite(TRIG_PIN, LOW);
 
-  while (digitalRead(ECHO_PIN) == 0 ) {}
-  
-  t1 = micros();
-  while (digitalRead(ECHO_PIN) == 1){}
-  t2 = micros();
-  
-  pulse_width = t2 - t1;
-
-  prevDist = currentDist;
-  currentDist = pulse_width / 58.0;
-
-  //add smoothing to ultrasonic reading
-  if(prevDist+10 < currentDist){
-      currentDist = prevDist+10;
+  t1 = micros(); t2 = micros();
+  while (digitalRead(ECHO_PIN) == 0){
+    t2 = micros();
+    if(t2 - t1 >= 11600){return 200.0f;}
   }
-
   
+  t1 = micros(); t2 = micros();
+  while (digitalRead(ECHO_PIN) == 1){
+    t2 = micros();
+    if(t2 - t1 >= 11600){return 200.0f;}
+  }
+  
+  return (t2 - t1) / 58.0;
 }

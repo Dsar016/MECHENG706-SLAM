@@ -49,6 +49,7 @@ void setup()
   Serial.begin(115200);
   BluetoothSerial->begin(115200);
   Serial.println("ROBUSSY ROLLOUT");
+  delay(2000);
 }
 
 void loop()
@@ -83,8 +84,10 @@ void Scan360(float deltaT)
     state=DRIVING;
   }
   msCounter0 += deltaT;
-  
+
+  turret->servoSpeed = 5;
   turret->Run(deltaT);
+  
   chassis->SetSpeed(0, 0, 50);
   if(turret->m_fireDetected){
     chassis->SetSpeed(0, 0, 0);
@@ -100,9 +103,12 @@ void Driving(float deltaT)
     RightRangePair->Run();
     sonarSensor->Run();
 
-    if(LeftRangePair->getDist1() < 10 && RightRangePair->getDist1() < 10 && sonarSensor->GetDist() < 10){
+    turret->servoSpeed = 10;
+    //Serial.println(sonarSensor->GetDist());
+
+    /*if(LeftRangePair->getDist1() < 10 && RightRangePair->getDist1() < 10 && sonarSensor->GetDist() < 10){
       state = WALLTURN;
-    }
+    } */
 
     // Collision manager
     avoidobstacle->Fuzzify(LeftRangePair->getDist1(), LeftRangePair->getDist2(), sonarSensor->GetDist(), RightRangePair->getDist1(), RightRangePair->getDist2());
@@ -112,6 +118,7 @@ void Driving(float deltaT)
 
     // Update Speeds
     chassis->SetSpeed(3*(2 - 4 * avoidobstacle->back),8*avoidobstacle->right, 30*turret->GetFireDirection());
+    //chassis->SetSpeed(6, 0, 0);
     chassis->Run(deltaT);
 }
 

@@ -17,6 +17,8 @@ class Turret
 
         bool m_fireDetected = false;
 
+        int servoSpeed = 5; 
+
     private: //PRIVATE_MEMBERS_______________________________________________________________________________________
 
         const short SERVO_PIN = 22;

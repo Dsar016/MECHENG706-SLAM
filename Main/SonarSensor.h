@@ -19,6 +19,8 @@ class SonarSensor
 
         const unsigned int MAX_DIST = 23200;
 
+        float Pulse();
+
         //min 10 microsecond overhead  fix this
 
 

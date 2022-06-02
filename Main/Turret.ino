@@ -50,7 +50,7 @@ bool Turret::RunScan(int deltaT)
     else if (currentPos + m_currentDir > m_MaxAngle){
         m_currentDir = RIGHT;
     }
-    m_turretServo.writeMicroseconds(currentPos + 5*m_currentDir);
+    m_turretServo.writeMicroseconds(currentPos + servoSpeed*m_currentDir);
     m_TimeRunning = 0;
 }
 
