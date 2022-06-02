@@ -37,9 +37,6 @@ void Turret::Run(int deltaT)
  */
 bool Turret::RunScan(int deltaT)
 {
-    m_TimeRunning += deltaT;  
-    if(m_TimeRunning <= 0) return; //increase this number to slow down response speed
-    
     int currentPos = m_turretServo.readMicroseconds();
 
     if (currentPos + m_currentDir < m_MinAngle){
@@ -49,7 +46,6 @@ bool Turret::RunScan(int deltaT)
         m_currentDir = RIGHT;
     }
     m_turretServo.writeMicroseconds(currentPos + servoSpeed*m_currentDir);
-    m_TimeRunning = 0;
 }
 
 /**

@@ -40,7 +40,6 @@ class Turret
             LEFT = 1
         };
         direct m_currentDir;
-        int m_TimeRunning; //stores the time in ms that the servo has been driving to its target
         
         bool RunScan(int deltaT);
         bool ExtinguishFire();

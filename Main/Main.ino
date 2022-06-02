@@ -8,8 +8,6 @@
 #include "Serial.h"
 #include "AvoidObstacle.h"
 
-extern SoftwareSerial* BluetoothSerial = new SoftwareSerial(BLUETOOTH_RX, BLUETOOTH_TX);
-
 enum STATE {
   INITIALISING,
   SCAN360,
