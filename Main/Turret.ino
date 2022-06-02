@@ -5,11 +5,11 @@ Turret::Turret(int scanAngle)
 {
     pinMode(FAN_PIN, OUTPUT);
     
-    m_MinAngle = 1500 - (600.0/90.0)*scanAngle;
-    m_MaxAngle = 1500 + (600.0/90.0)*scanAngle;
+    m_MinAngle = m_StraightAngle - (600.0/90.0)*scanAngle;
+    m_MaxAngle = m_StraightAngle + (600.0/90.0)*scanAngle;
 
     m_turretServo.attach(SERVO_PIN, m_MinAngle, m_MaxAngle); //, m_MinAngle, m_MaxAngle);
-    m_turretServo.writeMicroseconds(1500); //reset servo to straight
+    m_turretServo.writeMicroseconds(m_StraightAngle); //reset servo to straight
 
     m_currentDir = RIGHT;
 
@@ -96,9 +96,9 @@ int Turret::GetFireDirection(){
     return STRAIGHT;
   }
   
-  int straightAngle = 10;
-  int straightMin = 1500 - (600.0/90.0)*straightAngle;
-  int straightMax = 1500 + (600.0/90.0)*straightAngle;
+  int straightThreshold = 10;
+  int straightMin = m_StraightAngle - (600.0/90.0)*straightThreshold;
+  int straightMax = m_StraightAngle + (600.0/90.0)*straightThreshold;
   /*Serial.print(straightMin);
   Serial.print(" ");
   Serial.print(straightMax);

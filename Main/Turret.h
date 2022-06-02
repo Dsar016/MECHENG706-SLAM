@@ -28,6 +28,7 @@ class Turret
 
         int m_MinAngle = 600; //0deg 
         int m_MaxAngle = 2400; //180deg
+        const int m_StraightAngle = 1425;
         
         Servo m_turretServo;
         enum direct{
