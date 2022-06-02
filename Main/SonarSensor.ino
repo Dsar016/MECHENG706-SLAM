@@ -33,8 +33,8 @@ void SonarSensor::Run()
   currentDist = pulse_width / 58.0;
 
   //add smoothing to ultrasonic reading
-  if(prevDist*10 < currentDist){
-      currentDist = prevDist*10;
+  if(prevDist+10 < currentDist){
+      currentDist = prevDist+10;
   }
 
   
