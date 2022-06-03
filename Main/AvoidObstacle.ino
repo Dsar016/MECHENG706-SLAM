@@ -21,7 +21,7 @@ double AvoidObstacle::Far(double distance, double minDist, double maxDist) {
 void AvoidObstacle::Fuzzify(double LeftIR, double LeftFIR, double Sonar, double RightFIR, double RightIR) {
   double LF[2] = { Near(LeftFIR, this->frontMinDist, this->frontMaxDist), Far(LeftFIR, this->frontMinDist, this->frontMaxDist) };
   double RF[2] = { Near(RightFIR, this->frontMinDist, this->frontMaxDist), Far(RightFIR, this->frontMinDist, this->frontMaxDist) };
-  double S[2] = { Near(Sonar, this->sideMinDist, this->sideMaxDist), Far(Sonar, this->sideMinDist, this->sideMaxDist) };
+  double S[2] = { Near(Sonar, this->frontMinDist, this->frontMaxDist), Far(Sonar, this->frontMinDist, this->frontMaxDist) };
   double R[2] = { Near(RightIR, this->sideMinDist, this->sideMaxDist), Far(RightIR, this->sideMinDist, this->sideMaxDist) };
   double L[2] = { Near(LeftIR, this->sideMinDist, this->sideMaxDist), Far(LeftIR, this->sideMinDist, this->sideMaxDist) };
 

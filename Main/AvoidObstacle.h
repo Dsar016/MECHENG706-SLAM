@@ -14,7 +14,7 @@ class AvoidObstacle
         void Fuzzify(double LeftIR, double LeftFIR, double Sonar, double RightFIR, double RightIR);
 
     private: //PRIVATE_MEMBERS_______________________________________________________________________________________
-        double frontMinDist = 15; // Distance at which robot needs to move away from object
+        double frontMinDist = 10; // Distance at which robot needs to move away from object
         double frontMaxDist = 25; // Distance at which you dont care about objects
         double sideMinDist = 15; // Distance at which robot needs to move away from object
         double sideMaxDist = 30; // Distance at which you dont care about objects

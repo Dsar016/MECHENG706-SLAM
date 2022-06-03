@@ -18,6 +18,7 @@ float deltaT = 1; //Running Period
 int msCounter0 = 0;
 int constant0 = 0;
 int firesExtinguished = 0;
+bool wasHigh = false;
 
 Chassis* chassis;
 Turret* turret;
@@ -69,7 +70,7 @@ void Initialising(float deltaT)
 {
   // Check Battery
   battery->Check();
-  delay(2000);
+  delay(1000);
   
   // Begin tasks
   state = SCAN360;
@@ -100,7 +101,7 @@ void Scan360(float deltaT)
 void Driving(float deltaT)
 {
     // Execute scan after certain driving time
-    if(msCounter0 > 1000 && !turret->m_fireDetected){
+    if(msCounter0 > 750 && !turret->m_fireDetected){
       state=SCAN360;
     }
     msCounter0 += deltaT;
@@ -114,20 +115,37 @@ void Driving(float deltaT)
     avoidobstacle->Fuzzify(LeftRangePair->getDist1(), LeftRangePair->getDist2(), sonarSensor->GetDist(), RightRangePair->getDist1(), RightRangePair->getDist2());
 
     // Handle Fire Tracking
-    turret->servoSpeed = 10;
+    turret->servoSpeed = 12;
     turret->Run(deltaT);
 
-    // Update Speeds
     if(turret->m_fireReached){
-      turret->servoSpeed = 1;
+      wasHigh = true;
+    }
+
+    if(wasHigh){
+      if(!turret->m_fireDetected){
+        firesExtinguished++;
+        wasHigh = false;
+      }
+    }
+
+    if(firesExtinguished >= 2){
+      state=STOPPING;
+    }
+
+    // Update Speeds
+    if(wasHigh){//turret->m_fireReached){
+      turret->servoSpeed = 5;
       chassis->SetSpeed(0, 0, 0);
     }
-    else{chassis->SetSpeed(2*(2 - 4 * avoidobstacle->back),12*avoidobstacle->right, 30*turret->GetFireDirection());}
+    else{chassis->SetSpeed(3*(2 - 4 * avoidobstacle->back),12*avoidobstacle->right, 30*turret->GetFireDirection());}
     
     chassis->Run(deltaT);
 }
 
 void Stopping(int deltaT)
 {
-  
+  Serial.println("STOPPING");
+  chassis->SetSpeed(0, 0, 0);
+  chassis->Run(deltaT);
 }
