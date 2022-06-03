@@ -42,7 +42,7 @@ void setup()
 
   // Setup the Serial port and pointer, the pointer allows switching the debug info through the USB port(Serial) or Bluetooth port(Serial1) with ease.
   Serial.begin(115200);
-  Serial.println("ROBUSSY ROLLOUT");
+  Serial.println("SHARKY ROLLOUT");
   delay(2000);
 }
 
@@ -122,7 +122,7 @@ void Driving(float deltaT)
       turret->servoSpeed = 1;
       chassis->SetSpeed(0, 0, 0);
     }
-    else{chassis->SetSpeed(3*(2 - 4 * avoidobstacle->back),8*avoidobstacle->right, 30*turret->GetFireDirection());}
+    else{chassis->SetSpeed(2*(2 - 4 * avoidobstacle->back),12*avoidobstacle->right, 30*turret->GetFireDirection());}
     
     chassis->Run(deltaT);
 }

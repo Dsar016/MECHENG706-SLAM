@@ -16,8 +16,8 @@ class AvoidObstacle
     private: //PRIVATE_MEMBERS_______________________________________________________________________________________
         double frontMinDist = 15; // Distance at which robot needs to move away from object
         double frontMaxDist = 25; // Distance at which you dont care about objects
-        double sideMinDist = 5; // Distance at which robot needs to move away from object
-        double sideMaxDist = 20; // Distance at which you dont care about objects
+        double sideMinDist = 15; // Distance at which robot needs to move away from object
+        double sideMaxDist = 30; // Distance at which you dont care about objects
         
         double Near(double distance, double minDist, double maxDist);
         double Far(double distance, double minDist, double maxDist);
